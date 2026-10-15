@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Captain Trading · Desk</title>
+<meta name="description" content="Captain Trading · Desk : trading desk crypto & macro, signaux, liquidations, screener, agenda et news en temps réel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script id="cockpit-config">
+/*@@CONFIG@@*/
+</script>
+<script>
+/* Applique le thème avant l'affichage (évite un flash) */
+(function(){try{var c=window.COCKPIT_CONFIG||{},k="cockpit:"+(c.id||"captain")+":",t=localStorage.getItem(k+"theme")||c.theme||"dark";if(t!=="light")t="dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
+</script>
+<style>
+/*@@CSS@@*/
+</style>
+<script>
+/*@@JS@@*/
+</script>
+</head>
+<body>
+<canvas id="bg3d" aria-hidden="true"></canvas><div class="shade" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark" id="brandMark" aria-hidden="true"></span>
+    <div class="bt">
+      <div class="bname" id="bName">captain</div>
+      <div class="bsub" id="bSub">Trading · Desk</div>
+    </div>
+  </div>
+  <div class="island" id="island" aria-live="polite">
+    <div class="isl-norm"><span class="isl-live" aria-hidden="true"></span><span id="islText">En ligne</span></div>
+    <div class="isl-alert"><span class="isl-lbl" id="islLbl"></span><span class="isl-cd" id="islCd">15:00</span></div>
+  </div>
+  <div class="actions">
+    <div class="themes" role="group" aria-label="Affichage">
+      <button type="button" data-theme-set="dark">Sombre</button>
+      <button type="button" data-theme-set="light">Clair</button>
+    </div>
+    <button type="button" class="btn icon" id="btnLayout" title="Déplacer et redimensionner les blocs" aria-label="Disposition"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="9" rx="2"/><rect x="13.5" y="3.5" width="7" height="5" rx="2"/><rect x="13.5" y="11.5" width="7" height="9" rx="2"/><rect x="3.5" y="15.5" width="7" height="5" rx="2"/></svg></button>
+    <button type="button" class="btn icon" id="btnAlerts" title="Alertes" aria-label="Alertes"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="alertCount" hidden></span></button>
+    <button type="button" class="btn icon" id="btnCalc" title="Calculateur de position" aria-label="Calculateur de position"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16h0"/></svg></button>
+    <button type="button" class="btn icon kbd" id="btnPalette" title="Commandes (Ctrl+K)" aria-label="Commandes">⌘K</button>
+    <button type="button" class="btn primary" id="btnStudio">Studio</button>
+  </div>
+</header>
+
+<div class="strip" id="strip" aria-label="Prix en direct"></div>
+<nav class="doors" id="doors" role="tablist" aria-label="Espaces du desk"></nav>
+
+<main class="grid" id="grid">
+
+  <section class="mod" data-mod="net">
+    <header class="mhd"><span class="mno"></span><h2>Connexions</h2><span class="meta" id="netMeta"></span></header>
+    <div class="card net-card" id="net"></div>
+  </section>
+
+  <section class="mod" data-mod="levels">
+    <header class="mhd"><span class="mno"></span><h2>Niveaux clés</h2><span class="meta">OKX · jour, semaine, mois, sessions</span></header>
+    <div class="card"><div class="lv" id="levels"></div></div>
+  </section>
+
+  <section class="mod" data-mod="opts">
+    <header class="mhd"><span class="mno"></span><h2>Options Deribit</h2><span class="meta">échéances, max pain, murs</span></header>
+    <div class="card"><div class="op" id="opts"></div></div>
+  </section>
+
+  <section class="mod" data-mod="book">
+    <header class="mhd"><span class="mno"></span><h2>Carnet d'ordres agrégé</h2><span class="meta">7 carnets · ±1,2 %</span></header>
+    <div class="card"><div class="bk" id="book"></div></div>
+  </section>
+
+  <section class="mod" data-mod="corr">
+    <header class="mhd"><span class="mno"></span><h2>Corrélations du BTC</h2><span class="meta">30 et 90 séances</span></header>
+    <div class="card"><div class="cr" id="corr"></div></div>
+  </section>
+
+  <section class="mod" data-mod="day">
+    <header class="mhd"><span class="mno"></span><h2>Journée de trading · annonces</h2><button type="button" class="help" data-help="day" aria-label="Explication">?</button><span class="meta" id="dayMeta"></span></header>
+    <div class="helpbox" data-helpbox="day" hidden></div>
+    <div class="card day-card">
+      <div class="day-alert" id="dayAlert" hidden><span class="da-lbl" id="daLbl"></span><span class="da-cd" id="daCd">15:00</span></div>
+      <div class="day-wrap"><div class="day" id="day"></div><aside class="dside" id="daySide" aria-live="polite"></aside></div>
+      <div class="day-info" id="dayInfo"></div>
+    </div>
+  </section>
+
+  <section class="mod" data-mod="map">
+    <header class="mhd"><span class="mno"></span><h2>Signaux</h2><button type="button" class="help" data-help="map" aria-label="Explication">?</button><span class="meta" id="mapMeta">Chargement…</span></header>
+    <div class="helpbox" data-helpbox="map" hidden></div>
+    <div class="card map-card">
+      <div class="sig-list" id="sigList"></div>
+      <aside class="map-detail" id="mapDetail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section class="mod" data-mod="events">
+    <header class="mhd"><span class="mno"></span><h2>Agenda éco</h2><button type="button" class="help" data-help="events" aria-label="Explication">?</button><span class="meta" id="calMeta"></span></header>
+    <div class="helpbox" data-helpbox="events" hidden></div>
+    <div class="card">
+      <div class="next" id="nextEvent"></div>
+      <div class="cal" id="cal"></div>
+    </div>
+  </section>
+
+  <section class="mod" data-mod="deriv">
+    <header class="mhd"><span class="mno"></span><h2>Dérivés</h2><button type="button" class="help" data-help="deriv" aria-label="Explication">?</button><span class="meta">OKX · Binance</span></header>
+    <div class="helpbox" data-helpbox="deriv" hidden></div>
+    <div class="card"><div class="deriv" id="deriv"></div></div>
+  </section>
+
+  <section class="mod" data-mod="liq">
+    <header class="mhd"><span class="mno"></span><h2>Liquidations</h2><button type="button" class="help" data-help="liq" aria-label="Explication">?</button>
+      <div class="seg" id="liqSym" role="group" aria-label="Actif"><button type="button" data-s="BTC">BTC</button><button type="button" data-s="ETH">ETH</button><button type="button" data-s="SOL">SOL</button></div>
+    </header>
+    <div class="helpbox" data-helpbox="liq" hidden></div>
+    <div class="card liq-card">
+      <div class="liq-head" id="liqHead"></div>
+      <div class="liqmap" id="liqMap"><canvas id="liqCanvas"></canvas><div class="liqtip" id="liqTip" hidden></div></div>
+      <div class="liq-legend" id="liqLegend"></div>
+      <div class="liq-live">
+        <div class="liqsum" id="liqSum"></div>
+        <div class="feed" id="liqFeed"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mod" data-mod="movers">
+    <header class="mhd"><span class="mno"></span><h2>Top mouvements 24h</h2><button type="button" class="help" data-help="movers" aria-label="Explication">?</button>
+      <div class="seg" id="moversSeg" role="group" aria-label="Marché"><button type="button" data-m="spot">Spot</button><button type="button" data-m="perp">Perp</button></div>
+    </header>
+    <div class="helpbox" data-helpbox="movers" hidden></div>
+    <div class="card"><div class="movers" id="movers"></div></div>
+  </section>
+
+  <section class="mod" data-mod="screener">
+    <header class="mhd"><span class="mno"></span><h2>Screener</h2><button type="button" class="help" data-help="screener" aria-label="Explication">?</button><span class="meta" id="scanMeta"></span></header>
+    <div class="helpbox" data-helpbox="screener" hidden></div>
+    <div class="card">
+      <div class="sc-presets" id="presets" role="group" aria-label="Préréglages"></div>
+      <div class="sc-desc" id="scDesc"></div>
+      <div class="sc-bar">
+        <div class="seg" id="scTf" role="group" aria-label="Unité de temps"><button type="button" data-tf="1D">Journalier</button><button type="button" data-tf="4H">4 heures</button></div>
+        <input type="search" id="scanSearch" placeholder="Rechercher un coin" autocomplete="off">
+        <button type="button" class="btn sm" id="favOnly" aria-pressed="false">Favoris</button>
+        <button type="button" class="btn sm" id="scFilters" aria-pressed="false">Filtres</button>
+        <button type="button" class="btn sm" id="scanRun">Relancer</button>
+      </div>
+      <div class="sc-builder" id="scBuilder" hidden></div>
+      <div class="sc-progress" id="scProg"><i></i></div>
+      <div class="tablewrap">
+        <table class="scan">
+          <thead id="scanHead"></thead>
+          <tbody id="scanBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="scanState" hidden></div>
+    </div>
+  </section>
+
+  <section class="mod" data-mod="news">
+    <header class="mhd"><span class="mno"></span><h2>News</h2><button type="button" class="help" data-help="news" aria-label="Explication">?</button>
+      <div class="seg" id="newsSeg" role="group" aria-label="Flux"><button type="button" data-n="macro">Macro</button><button type="button" data-n="crypto">Crypto</button><button type="button" data-n="articles">Articles</button></div>
+      <button type="button" class="btn sm" id="newsLang" title="Traduire en français">FR</button>
+    </header>
+    <div class="helpbox" data-helpbox="news" hidden></div>
+    <div class="card"><div class="news" id="news"></div></div>
+  </section>
+
+</main>
+
+<div class="editbar" id="editBar" hidden>
+  <span class="eb-tip">Glisse un bloc par son titre, redimensionne-le par le coin en bas à droite.</span>
+  <div class="eb-add" id="layAdd"></div>
+  <button type="button" class="btn sm" id="layReset">Disposition d'origine</button>
+  <button type="button" class="btn sm primary" id="layDone">Terminer</button>
+</div>
+
+<footer class="foot">
+  <span id="footBrand">Captain Trading · Desk</span>
+  <span class="sep">·</span>
+  <span>Données : OKX, Binance, Bybit, TradingView, FinancialJuice, alternative.me</span>
+  <span class="sep">·</span>
+  <span id="wsState">Connexion…</span>
+</footer>
+
+<!-- ========== Fenêtres ========== -->
+<div class="ov" id="ovChart" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="chartTitle">
+    <div class="mh"><h3 id="chartTitle">Graphique</h3><a class="btn sm" id="chartLink" target="_blank" rel="noopener">Ouvrir sur TradingView</a><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="chartbox" id="chartBox"></div>
+  </div>
+</div>
+
+<div class="ov" id="ovStudio" hidden>
+  <div class="modal side" role="dialog" aria-modal="true" aria-labelledby="studioTitle">
+    <div class="mh"><h3 id="studioTitle">Studio</h3><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="mb" id="studioBody"></div>
+    <div class="mf">
+      <button type="button" class="btn" id="stReset">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="ov" id="ovAlerts" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="alertsTitle">
+    <div class="mh"><h3 id="alertsTitle">Alertes</h3><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="mb">
+      <form class="aform" id="alertForm">
+        <input id="alSym" placeholder="BTC" autocomplete="off" aria-label="Actif" required>
+        <select id="alCond" aria-label="Condition"><option value="above">passe au-dessus de</option><option value="below">passe en dessous de</option></select>
+        <input id="alPx" type="number" step="any" placeholder="Prix" aria-label="Prix" required>
+        <button type="submit" class="btn primary">Ajouter</button>
+      </form>
+      <div class="err" id="alErr" hidden></div>
+      <div class="alist" id="alList"></div>
+      <label class="chk"><input type="checkbox" id="alRose"> M'alerter quand un indicateur de la carte change d'état</label>
+      <p class="note">Les alertes sonnent tant que cet onglet reste ouvert (même en arrière-plan).</p>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ovCalc" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
+    <div class="mh"><h3 id="calcTitle">Calculateur de position</h3><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="mb calc">
+      <label>Capital ($)<input id="cCap" type="number" step="any" value="1000"></label>
+      <label>Risque par trade (%)<input id="cRisk" type="number" step="any" value="1"></label>
+      <label>Entrée<input id="cIn" type="number" step="any" placeholder="86000"></label>
+      <label>Stop<input id="cSl" type="number" step="any" placeholder="84500"></label>
+      <label>Objectif (optionnel)<input id="cTp" type="number" step="any" placeholder="90500"></label>
+      <div class="cout" id="cOut"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ov pal" id="ovPalette" hidden>
+  <div class="modal palette" role="dialog" aria-modal="true" aria-label="Commandes">
+    <input id="palIn" placeholder="Tape une commande ou un coin (ex. SOL)" autocomplete="off">
+    <div class="pallist" id="palList" role="listbox"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script id="cockpit-boot">window.Cockpit&&window.Cockpit.boot();</script>
+</body>
+</html>
