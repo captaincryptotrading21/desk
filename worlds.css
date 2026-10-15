@@ -628,3 +628,29 @@ body.fdrag,body.fdrag *{cursor:grabbing!important;user-select:none}
   .dband em{display:none}
   .dtip{min-width:200px}
 }
+
+/* ================= Fais-en le tien ================= */
+.btn.own{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 65%,transparent);color:var(--accent-ink)}
+@media (hover:hover) and (pointer:fine){.btn.own:hover{background:var(--accent-bg)}}
+@media (max-width:860px){#btnOwn{display:none}}
+.modal.own-m{width:min(620px,100%)}
+.own-b{display:flex;flex-direction:column;gap:18px}
+.own-lead{margin:0;font-size:15.5px;line-height:1.55;color:var(--text)}
+.own-steps{list-style:none;margin:0;padding:0;counter-reset:st;display:flex;flex-direction:column;gap:14px}
+.own-steps li{counter-increment:st;display:grid;grid-template-columns:30px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
+.own-steps li::before{content:counter(st);grid-row:span 4;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--mono);background:var(--accent);color:var(--on-accent)}
+.own-steps b{font:700 16px/1.3 var(--font)}
+.own-steps span{font-size:14px;line-height:1.45;color:var(--muted)}
+.own-steps .btn{justify-self:start;margin-top:4px}
+.own-prompt{margin-top:6px;padding:12px 14px;border-radius:8px;background:var(--inset);box-shadow:inset 0 0 0 1px var(--line-2);display:flex;flex-direction:column;gap:10px}
+.own-prompt p{margin:0;font:500 13px/1.55 var(--mono);color:var(--text);user-select:all}
+.own-prompt .btn{align-self:flex-start}
+.own-ex{display:flex;flex-wrap:wrap;gap:6px;font-size:13.5px}
+.own-ex b{flex-basis:100%;font-weight:600;margin-bottom:2px}
+.own-ex span{padding:4px 10px;border-radius:999px;background:var(--inset);color:var(--muted)}
+.own-trust{list-style:none;margin:0;padding:12px 0 0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13.5px;color:var(--muted)}
+.own-trust li::before{content:"✓ ";color:var(--up);font-weight:700}
+@media (max-width:600px){.own-trust{grid-template-columns:1fr}}
+.st-own{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-bottom:20px;padding:12px 14px;border:0;border-radius:8px;background:var(--accent-bg);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 45%,transparent);color:var(--text);text-align:left;cursor:pointer}
+.st-own b{font:700 15px var(--font);color:var(--accent-ink)}
+.st-own span{font-size:13px;color:var(--muted)}

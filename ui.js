@@ -12,7 +12,7 @@ function seg(id,cur,opts){return '<div class="st-seg" id="'+id+'" role="group">'
 /* Studio : l'essentiel visible, le reste replié. Tout s'applique tout de suite. */
 function renderStudio(){
   var C=CK.cfg(),sp=CK.layout&&CK.layout.spaces?CK.layout.spaces():[];
-  var h='<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
+  var h='<button type="button" class="st-own" id="sOwn"><b>Fais-en le tien</b><span>Change tout ce que tu veux avec une IA, sans coder →</span></button>'+'<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
     fld("Nom",'<input id="sName" maxlength="24" value="'+esc(C.name)+'">')+fld("Sous-titre",'<input id="sTag" maxlength="40" value="'+esc(C.tagline)+'">')+
     fld("Cryptos suivies dans la barre du haut",'<input id="sWatch" value="'+esc((C.watchlist||[]).join(", "))+'" placeholder="BTC, ETH, SOL">',true)+'</div></div>'+
     '<div class="st-sec"><h4>Blocs de chaque espace</h4><p class="st-hint">Clique sur un bloc pour l\'afficher ou le masquer. Pour changer l\'ordre ou la largeur : ouvre l\'espace puis le bouton Disposition.</p>'+
@@ -54,6 +54,7 @@ function wireStudio(){
   $("studioBody").addEventListener("input",function(){clearTimeout(deb);deb=setTimeout(function(){var prev=CK.cfg();applyLive(readStudio(),prev);},150);});
   $("studioBody").addEventListener("change",function(){var prev=CK.cfg();applyLive(readStudio(),prev);});
   $("studioBody").addEventListener("click",function(e){
+    if(e.target.closest("#sOwn")){CK.closeOv($("ovStudio"));setTimeout(function(){CK.openOv("ovOwn");},220);return;}
     if(e.target.id==="sLayout"){CK.closeOv($("ovStudio"));setTimeout(function(){CK.layout.edit(true);},220);return;}
     var sb=e.target.closest(".st-seg button");
     if(sb){sb.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===sb?"true":"false");});var prev=CK.cfg();applyLive(readStudio(),prev);
@@ -132,6 +133,7 @@ function wireCalc(){$("btnCalc").addEventListener("click",function(){var b=S.tic
 var palSel=0,palItems=[];
 function cmds(){return [
   {t:"Affichage sombre",k:"thème",run:function(){CK.setTheme("dark");}},{t:"Affichage clair",k:"thème",run:function(){CK.setTheme("light");}},
+  {t:"Fais-en le tien",k:"personnaliser avec une IA",run:function(){CK.openOv("ovOwn");}},
   {t:"Ouvrir le Studio",k:"personnaliser",run:function(){$("btnStudio").click();}},{t:"Déplacer les blocs",k:"disposition",run:function(){CK.layout.edit(true);}},
   
   {t:"Alertes",k:"prix",run:function(){$("btnAlerts").click();}},{t:"Calculateur de position",k:"risque",run:function(){$("btnCalc").click();}},
@@ -156,5 +158,7 @@ function wirePal(){
   });
 }
 
-UI.boot=function(){wireStudio();wireAlerts();wireCalc();wirePal();};
+function wireOwn(){var b=$("btnOwn");if(!b)return;b.addEventListener("click",function(){CK.openOv("ovOwn");});
+  $("ownCopy").addEventListener("click",function(){copy($("ownPrompt").textContent).then(function(){CK.toast("<b>Texte copié.</b> Colle-le dans Claude Code.");});});}
+UI.boot=function(){wireOwn();wireStudio();wireAlerts();wireCalc();wirePal();};
 })();

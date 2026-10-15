@@ -1,56 +1,56 @@
 # Captain Trading · Desk
 
-Un terminal de trading crypto et macro, gratuit, dans ton navigateur. Sessions et annonces de la journée, signaux, carte des liquidations, screener, carnet d'ordres agrégé, news à la minute traduites en français. Plus de 15 sources en direct, sans inscription ni clé API.
+Un terminal de trading crypto et macro, gratuit, dans ton navigateur : sessions et annonces de la journée, signaux, carte des liquidations, screener, carnet d'ordres agrégé, news à la minute traduites en français.
 
-**👉 L'utiliser tout de suite : https://captaincryptotrading21.github.io/desk**
+## 👉 [Ouvrir le Desk](https://captaincryptotrading21.github.io/desk)
 
-Ça marche sur ordinateur et sur téléphone.
+Gratuit · sans inscription · sur ordinateur et téléphone.
 
 ---
 
-## Le personnaliser avec une IA (sans savoir coder)
+## Fais-en le tien, sans savoir coder
 
-Tu peux transformer le Desk comme tu veux : changer les couleurs, déplacer les blocs, ajouter tes cryptos, créer un nouveau bloc… en le demandant simplement à une IA.
+Tu peux transformer le Desk comme tu veux (couleurs, cryptos, blocs, nouvelles fonctions) en le demandant simplement à une IA.
 
-**Ce qu'il te faut**
-- [Claude Code](https://claude.com/claude-code) (abonnement Claude payant, à partir de Pro). La version gratuite de Claude dans le navigateur ne peut pas modifier un projet de cette taille.
-- [Node.js](https://nodejs.org) (gratuit, version 18 ou plus) pour reconstruire le fichier après chaque modification.
+**1. Installe [Claude Code](https://claude.com/claude-code)**
+L'assistant de Claude qui travaille directement sur ton ordinateur. Il faut un abonnement Claude (à partir de Pro).
 
-**Les étapes**
-1. En haut de cette page : bouton vert **Code** → **Download ZIP**. Décompresse le dossier.
-2. Ouvre ce dossier dans Claude Code.
-3. Demande ce que tu veux, avec tes mots. Exemples :
-   - « Passe toute l'interface en violet. »
-   - « Dans l'espace Liquidations, mets le carnet d'ordres en pleine largeur sous la carte. »
-   - « Ajoute AVAX et LINK dans la barre du haut. »
-   - « Ajoute un bloc qui affiche le prix de l'or. »
-4. Claude lit le fichier `CLAUDE.md` (le guide du projet), fait la modification et reconstruit `index.html`.
-5. Ouvre `index.html` dans ton navigateur : c'est ta version.
+**2. Ouvre-le dans un dossier vide**
+Par exemple un dossier `mon-desk` sur ton bureau.
 
-## Le mettre en ligne (optionnel)
+**3. Colle ce texte**
 
-Pour avoir ta version sur ton propre lien :
-1. Crée un dépôt public sur ton compte GitHub.
-2. **Settings → Pages → Source : GitHub Actions.**
-3. **Add file → Upload files** : glisse tous les fichiers du dossier.
-4. L'envoi par le site ignore le dossier `.github` : crée le robot à la main avec **Add file → Create new file**, nom `.github/workflows/desk.yml`, et colle le contenu du fichier du même nom.
-5. Ton Desk sera en ligne sur `https://TON-PSEUDO.github.io/NOM-DU-DEPOT` après le premier passage du robot (onglet **Actions**, coche verte).
+```
+Récupère le projet https://github.com/captaincryptotrading21/desk dans ce dossier. Lis le fichier CLAUDE.md pour comprendre comment il est construit, puis ouvre index.html dans mon navigateur pour que je voie mon Desk. Si un outil manque sur mon ordinateur (Git ou Node.js), installe-le ou explique-moi simplement comment faire. Ensuite, demande-moi ce que je veux changer, fais les modifications une par une et montre-moi le résultat à chaque fois.
+```
 
-Le robot (`robot.mjs`) tournera alors aussi chez toi. Pour que ta version utilise tes propres données, remplace l'adresse `data` dans `config.js` par celle de ton site (voir `CLAUDE.md`).
+Ensuite, demande ce que tu veux : « Passe toute l'interface en violet », « Ajoute AVAX et LINK en haut », « Ajoute un bloc avec le prix de l'or »…
 
-## Ce qu'il y a dans le dossier
+---
+
+## Pourquoi tu peux lui faire confiance
+
+- **Gratuit, sans inscription**, et ça le restera.
+- **Rien à connecter** : le Desk ne touche jamais à ton compte d'échange, ne demande aucune clé ni mot de passe.
+- **Tout est visible** : le code est ici, lisible par n'importe qui. Les données viennent directement des plateformes (OKX, Binance, Bybit, Deribit…).
+
+<details>
+<summary>Pour les curieux : comment c'est organisé</summary>
 
 | Élément | Rôle |
 |---|---|
 | `index.html` | Le Desk, prêt à l'emploi (fichier généré) |
-| `page.html`, `*.js`, `*.css`, `config.js` | Le code source, découpé par bloc : c'est ce qu'on modifie |
-| `build.mjs` | Reconstruit `index.html` à partir du code source : `node build.mjs` |
+| `page.html`, `*.js`, `*.css`, `config.js` | Le code source : c'est ce qu'on modifie |
+| `build.mjs` | Reconstruit `index.html` : `node build.mjs` |
 | `serve.mjs` | Aperçu local : `node serve.mjs` puis http://localhost:5173 |
-| `robot.mjs` | Le robot : agenda, news crypto traduites, copie de FinancialJuice |
+| `robot.mjs` | Le robot (toutes les 10 min) : agenda, news crypto traduites, copie de FinancialJuice |
 | `CLAUDE.md` | Le guide du projet pour l'IA |
+
+**Mettre ta version en ligne :** crée un dépôt public sur ton GitHub, **Settings → Pages → Source : GitHub Actions**, dépose tous les fichiers (**Add file → Upload files**), puis crée le robot avec **Add file → Create new file**, nom `.github/workflows/desk.yml`, en collant le contenu du fichier du même nom. Ton Desk sera sur `https://TON-PSEUDO.github.io/NOM-DU-DEPOT`.
+</details>
 
 ---
 
 ⚠️ Outil d'information, pas un conseil en investissement. Les données viennent de sources publiques et peuvent être incomplètes ou en retard. Le trading comporte un risque de perte en capital.
 
-Créé par [Captain Trading](https://captaincryptotrading21.github.io/desk).
+Créé par Captain Trading · [Licence](LICENSE.md) : usage personnel libre, revente interdite.

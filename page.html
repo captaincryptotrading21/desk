@@ -46,6 +46,7 @@
     <button type="button" class="btn icon" id="btnAlerts" title="Alertes" aria-label="Alertes"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="alertCount" hidden></span></button>
     <button type="button" class="btn icon" id="btnCalc" title="Calculateur de position" aria-label="Calculateur de position"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16h0"/></svg></button>
     <button type="button" class="btn icon kbd" id="btnPalette" title="Commandes (Ctrl+K)" aria-label="Commandes">⌘K</button>
+    <button type="button" class="btn own" id="btnOwn" title="Récupérer le Desk et le personnaliser avec une IA">Fais-en le tien</button>
     <button type="button" class="btn primary" id="btnStudio">Studio</button>
   </div>
 </header>
@@ -223,6 +224,27 @@
       <label class="chk"><input type="checkbox" id="alRose"> M'alerter quand un indicateur de la carte change d'état</label>
       <p class="note">Les alertes sonnent tant que cet onglet reste ouvert (même en arrière-plan).</p>
     </div>
+  </div>
+</div>
+
+<div class="ov" id="ovOwn" data-nofocus hidden>
+  <div class="modal own-m" role="dialog" aria-modal="true" aria-labelledby="ownTitle">
+    <div class="mh"><h3 id="ownTitle">Fais-en le tien</h3><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="mb own-b">
+      <p class="own-lead">Ce Desk est gratuit et le restera. Tu peux aussi le transformer comme tu veux : tes couleurs, tes cryptos, tes blocs, tes idées. Pas besoin de savoir coder : tu le demandes à une IA, et elle le fait.</p>
+      <ol class="own-steps">
+        <li><b>Installe Claude Code</b><span>L'assistant de Claude qui travaille directement sur ton ordinateur. Il faut un abonnement Claude (à partir de Pro).</span><a class="btn sm" href="https://claude.com/claude-code" target="_blank" rel="noopener noreferrer">Installer Claude Code</a></li>
+        <li><b>Ouvre-le dans un dossier vide</b><span>Par exemple un dossier « mon-desk » sur ton bureau.</span></li>
+        <li><b>Colle ce texte</b><span>Claude récupère le Desk, l'installe et l'ouvre dans ton navigateur.</span>
+          <div class="own-prompt"><p id="ownPrompt">Récupère le projet https://github.com/captaincryptotrading21/desk dans ce dossier. Lis le fichier CLAUDE.md pour comprendre comment il est construit, puis ouvre index.html dans mon navigateur pour que je voie mon Desk. Si un outil manque sur mon ordinateur (Git ou Node.js), installe-le ou explique-moi simplement comment faire. Ensuite, demande-moi ce que je veux changer, fais les modifications une par une et montre-moi le résultat à chaque fois.</p><button type="button" class="btn sm primary" id="ownCopy">Copier le texte</button></div></li>
+      </ol>
+      <div class="own-ex"><b>Ensuite, demande ce que tu veux :</b>
+        <span>« Passe toute l'interface en violet »</span><span>« Ajoute AVAX et LINK en haut »</span><span>« Mets le carnet d'ordres sous la carte des liquidations »</span><span>« Ajoute un bloc avec le prix de l'or »</span></div>
+      <ul class="own-trust">
+        <li>Gratuit, sans inscription</li><li>Rien à connecter à ton compte d'échange</li><li>Aucune clé ni mot de passe</li><li>Code lisible par tous sur GitHub</li>
+      </ul>
+    </div>
+    <div class="mf"><a class="btn" href="https://github.com/captaincryptotrading21/desk" target="_blank" rel="noopener noreferrer">Voir le code sur GitHub</a></div>
   </div>
 </div>
 

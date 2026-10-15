@@ -1450,6 +1450,32 @@ body.fdrag,body.fdrag *{cursor:grabbing!important;user-select:none}
   .dband em{display:none}
   .dtip{min-width:200px}
 }
+
+/* ================= Fais-en le tien ================= */
+.btn.own{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 65%,transparent);color:var(--accent-ink)}
+@media (hover:hover) and (pointer:fine){.btn.own:hover{background:var(--accent-bg)}}
+@media (max-width:860px){#btnOwn{display:none}}
+.modal.own-m{width:min(620px,100%)}
+.own-b{display:flex;flex-direction:column;gap:18px}
+.own-lead{margin:0;font-size:15.5px;line-height:1.55;color:var(--text)}
+.own-steps{list-style:none;margin:0;padding:0;counter-reset:st;display:flex;flex-direction:column;gap:14px}
+.own-steps li{counter-increment:st;display:grid;grid-template-columns:30px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
+.own-steps li::before{content:counter(st);grid-row:span 4;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--mono);background:var(--accent);color:var(--on-accent)}
+.own-steps b{font:700 16px/1.3 var(--font)}
+.own-steps span{font-size:14px;line-height:1.45;color:var(--muted)}
+.own-steps .btn{justify-self:start;margin-top:4px}
+.own-prompt{margin-top:6px;padding:12px 14px;border-radius:8px;background:var(--inset);box-shadow:inset 0 0 0 1px var(--line-2);display:flex;flex-direction:column;gap:10px}
+.own-prompt p{margin:0;font:500 13px/1.55 var(--mono);color:var(--text);user-select:all}
+.own-prompt .btn{align-self:flex-start}
+.own-ex{display:flex;flex-wrap:wrap;gap:6px;font-size:13.5px}
+.own-ex b{flex-basis:100%;font-weight:600;margin-bottom:2px}
+.own-ex span{padding:4px 10px;border-radius:999px;background:var(--inset);color:var(--muted)}
+.own-trust{list-style:none;margin:0;padding:12px 0 0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13.5px;color:var(--muted)}
+.own-trust li::before{content:"✓ ";color:var(--up);font-weight:700}
+@media (max-width:600px){.own-trust{grid-template-columns:1fr}}
+.st-own{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-bottom:20px;padding:12px 14px;border:0;border-radius:8px;background:var(--accent-bg);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 45%,transparent);color:var(--text);text-align:left;cursor:pointer}
+.st-own b{font:700 15px var(--font);color:var(--accent-ink)}
+.st-own span{font-size:13px;color:var(--muted)}
 </style>
 <script>
 /* ================================================================
@@ -3507,7 +3533,7 @@ function seg(id,cur,opts){return '<div class="st-seg" id="'+id+'" role="group">'
 /* Studio : l'essentiel visible, le reste replié. Tout s'applique tout de suite. */
 function renderStudio(){
   var C=CK.cfg(),sp=CK.layout&&CK.layout.spaces?CK.layout.spaces():[];
-  var h='<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
+  var h='<button type="button" class="st-own" id="sOwn"><b>Fais-en le tien</b><span>Change tout ce que tu veux avec une IA, sans coder →</span></button>'+'<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
     fld("Nom",'<input id="sName" maxlength="24" value="'+esc(C.name)+'">')+fld("Sous-titre",'<input id="sTag" maxlength="40" value="'+esc(C.tagline)+'">')+
     fld("Cryptos suivies dans la barre du haut",'<input id="sWatch" value="'+esc((C.watchlist||[]).join(", "))+'" placeholder="BTC, ETH, SOL">',true)+'</div></div>'+
     '<div class="st-sec"><h4>Blocs de chaque espace</h4><p class="st-hint">Clique sur un bloc pour l\'afficher ou le masquer. Pour changer l\'ordre ou la largeur : ouvre l\'espace puis le bouton Disposition.</p>'+
@@ -3549,6 +3575,7 @@ function wireStudio(){
   $("studioBody").addEventListener("input",function(){clearTimeout(deb);deb=setTimeout(function(){var prev=CK.cfg();applyLive(readStudio(),prev);},150);});
   $("studioBody").addEventListener("change",function(){var prev=CK.cfg();applyLive(readStudio(),prev);});
   $("studioBody").addEventListener("click",function(e){
+    if(e.target.closest("#sOwn")){CK.closeOv($("ovStudio"));setTimeout(function(){CK.openOv("ovOwn");},220);return;}
     if(e.target.id==="sLayout"){CK.closeOv($("ovStudio"));setTimeout(function(){CK.layout.edit(true);},220);return;}
     var sb=e.target.closest(".st-seg button");
     if(sb){sb.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===sb?"true":"false");});var prev=CK.cfg();applyLive(readStudio(),prev);
@@ -3627,6 +3654,7 @@ function wireCalc(){$("btnCalc").addEventListener("click",function(){var b=S.tic
 var palSel=0,palItems=[];
 function cmds(){return [
   {t:"Affichage sombre",k:"thème",run:function(){CK.setTheme("dark");}},{t:"Affichage clair",k:"thème",run:function(){CK.setTheme("light");}},
+  {t:"Fais-en le tien",k:"personnaliser avec une IA",run:function(){CK.openOv("ovOwn");}},
   {t:"Ouvrir le Studio",k:"personnaliser",run:function(){$("btnStudio").click();}},{t:"Déplacer les blocs",k:"disposition",run:function(){CK.layout.edit(true);}},
   
   {t:"Alertes",k:"prix",run:function(){$("btnAlerts").click();}},{t:"Calculateur de position",k:"risque",run:function(){$("btnCalc").click();}},
@@ -3651,7 +3679,9 @@ function wirePal(){
   });
 }
 
-UI.boot=function(){wireStudio();wireAlerts();wireCalc();wirePal();};
+function wireOwn(){var b=$("btnOwn");if(!b)return;b.addEventListener("click",function(){CK.openOv("ovOwn");});
+  $("ownCopy").addEventListener("click",function(){copy($("ownPrompt").textContent).then(function(){CK.toast("<b>Texte copié.</b> Colle-le dans Claude Code.");});});}
+UI.boot=function(){wireOwn();wireStudio();wireAlerts();wireCalc();wirePal();};
 })();
 
 /* ================================================================
@@ -4345,6 +4375,7 @@ CK.sound={
     <button type="button" class="btn icon" id="btnAlerts" title="Alertes" aria-label="Alertes"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="alertCount" hidden></span></button>
     <button type="button" class="btn icon" id="btnCalc" title="Calculateur de position" aria-label="Calculateur de position"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16h0"/></svg></button>
     <button type="button" class="btn icon kbd" id="btnPalette" title="Commandes (Ctrl+K)" aria-label="Commandes">⌘K</button>
+    <button type="button" class="btn own" id="btnOwn" title="Récupérer le Desk et le personnaliser avec une IA">Fais-en le tien</button>
     <button type="button" class="btn primary" id="btnStudio">Studio</button>
   </div>
 </header>
@@ -4522,6 +4553,27 @@ CK.sound={
       <label class="chk"><input type="checkbox" id="alRose"> M'alerter quand un indicateur de la carte change d'état</label>
       <p class="note">Les alertes sonnent tant que cet onglet reste ouvert (même en arrière-plan).</p>
     </div>
+  </div>
+</div>
+
+<div class="ov" id="ovOwn" data-nofocus hidden>
+  <div class="modal own-m" role="dialog" aria-modal="true" aria-labelledby="ownTitle">
+    <div class="mh"><h3 id="ownTitle">Fais-en le tien</h3><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="mb own-b">
+      <p class="own-lead">Ce Desk est gratuit et le restera. Tu peux aussi le transformer comme tu veux : tes couleurs, tes cryptos, tes blocs, tes idées. Pas besoin de savoir coder : tu le demandes à une IA, et elle le fait.</p>
+      <ol class="own-steps">
+        <li><b>Installe Claude Code</b><span>L'assistant de Claude qui travaille directement sur ton ordinateur. Il faut un abonnement Claude (à partir de Pro).</span><a class="btn sm" href="https://claude.com/claude-code" target="_blank" rel="noopener noreferrer">Installer Claude Code</a></li>
+        <li><b>Ouvre-le dans un dossier vide</b><span>Par exemple un dossier « mon-desk » sur ton bureau.</span></li>
+        <li><b>Colle ce texte</b><span>Claude récupère le Desk, l'installe et l'ouvre dans ton navigateur.</span>
+          <div class="own-prompt"><p id="ownPrompt">Récupère le projet https://github.com/captaincryptotrading21/desk dans ce dossier. Lis le fichier CLAUDE.md pour comprendre comment il est construit, puis ouvre index.html dans mon navigateur pour que je voie mon Desk. Si un outil manque sur mon ordinateur (Git ou Node.js), installe-le ou explique-moi simplement comment faire. Ensuite, demande-moi ce que je veux changer, fais les modifications une par une et montre-moi le résultat à chaque fois.</p><button type="button" class="btn sm primary" id="ownCopy">Copier le texte</button></div></li>
+      </ol>
+      <div class="own-ex"><b>Ensuite, demande ce que tu veux :</b>
+        <span>« Passe toute l'interface en violet »</span><span>« Ajoute AVAX et LINK en haut »</span><span>« Mets le carnet d'ordres sous la carte des liquidations »</span><span>« Ajoute un bloc avec le prix de l'or »</span></div>
+      <ul class="own-trust">
+        <li>Gratuit, sans inscription</li><li>Rien à connecter à ton compte d'échange</li><li>Aucune clé ni mot de passe</li><li>Code lisible par tous sur GitHub</li>
+      </ul>
+    </div>
+    <div class="mf"><a class="btn" href="https://github.com/captaincryptotrading21/desk" target="_blank" rel="noopener noreferrer">Voir le code sur GitHub</a></div>
   </div>
 </div>
 
