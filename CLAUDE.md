@@ -36,10 +36,29 @@ Un petit robot GitHub (`robot.mjs`) publie toutes les 10 minutes ce que le navig
 | `screener.js` | Screener (préréglages dans `PRESETS`, colonnes dans `COLS`). |
 | `ui.js` | Studio, alertes de prix, calculateur de position, palette de commandes (Ctrl+K). |
 | `net.js` | Espace « Connexions » : état en direct de chaque source (liste `SRC`). |
+| `veille.js` | **Les agents** (espace « Agent ») : réglages par défaut en haut du fichier (`REGLAGES`), mesures du marché, détection Scalp, Analyste, appel à l'IA choisie (`IA` : Gemini, OpenRouter, ChatGPT, Claude, Grok, Perplexity, DeepSeek, Mistral), contrôle des prix cités, consommation de l'IA et affichage. |
+| `agent-manuel.md` | **Le cerveau des agents** : la méthode de trader, en français, et les deux contrats JSON (ALERTE SCALP, ANALYSTE). Il est envoyé à l'IA à chaque appel. |
 | `sound.js` | Ambiances sonores et sons d'interface. |
 | `bg.js` | Fond animé. |
 
 Tout le code partage l'objet global `window.CK`. Chaque fichier est une fonction auto-exécutée qui ajoute son module (`CK.day`, `CK.map`, `CK.layout`…).
+
+## L'agent IA (espace « Agent », touche 6)
+
+L'agent tourne sur un relais Cloudflare commun à tous les utilisateurs (code : `relais/desk-news-worker.js` dans le dépôt de Captain Trading, pas dans ce dossier). Toutes les minutes, il lit le marché (OKX, TradingView, news Telegram et Tree of Alpha, agenda), détecte ce qui compte avec des règles de trader (purges, gros moves, levier, cassures et pièges de niveaux, volume anormal, bougie anormale du dollar, volume EUR/USD, news qui font bouger le prix, annonces), écrit dans son fil, suit ses propres messages (↳) et appelle une IA seulement pour un événement important, le brief de Londres et de New York, et un point par heure.
+
+Le Desk (`veille.js`) affiche :
+1. des cartes vivantes BTC, ETH, SOL et dollar, calculées en direct dans le navigateur ;
+2. le fil de l'agent, façon chat de desk, avec les réponses de l'IA et les suivis ;
+3. les 👍 / 👎 de chaque utilisateur (gardés dans son navigateur), qui règlent ce qui lui remonte et le notifie ;
+4. l'onglet « Conso IA » : appels, tokens et état de chaque IA (Gemini, OpenRouter, Workers AI).
+
+Personne n'a de clé à mettre : les clés sont des secrets du relais, jamais dans le code, le Desk ou GitHub.
+
+**Recettes**
+- *Changer l'affichage* : `veille.js` (cartes : `card()` et `cardUSD()` ; fil : `line()` ; types de messages : `TYPES`) et le bloc « Agent IA » de `worlds.css`.
+- *Changer quand l'agent te notifie* : réglage « Me notifier » dans l'agent, ou `REGLAGES.notifier`.
+- *Avoir ton propre agent* (autres règles, autres actifs) : déploie ta copie du relais sur ton compte Cloudflare et mets son adresse dans `TG_URL` (`core.js`).
 
 ## Recettes courantes
 

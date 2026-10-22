@@ -15,6 +15,7 @@ var DEST=[
   {id:"screener",name:"Screener",sub:"setups, graphiques",c:"#FF8A3D"},
   {id:"liq",name:"Liquidations",sub:"flux, carte, top 24 h",c:"#F07384"},
   {id:"news",name:"News",sub:"flux macro, agenda",c:"#A99BEA"},
+  {id:"veille",name:"Agent",sub:"scalp, analyste, IA",c:"#B8F36B"},
   {id:"fond",name:"Fond 3D",sub:"relief du BTC",c:"#8E949E"}
 ];
 var DN={};DEST.forEach(function(d){DN[d.id]=d;});
@@ -41,6 +42,10 @@ var SRC=[
   {id:"fng",name:"alternative.me",p:"REST",kind:"http",exp:1800000,to:["signaux"],ep:["api.alternative.me/fng/?limit=30"],data:"Indice Fear & Greed (signal Sentiment).",freq:"Toutes les 30 min"},
   {id:"fj",name:"FinancialJuice",p:"RSS",kind:"http",exp:600000,to:["news"],ep:["www.financialjuice.com/feed.ashx?xy=rss"],data:"News macro en quasi temps réel.",freq:"Toutes les minutes ; copie du robot si le site bloque"},
   {id:"tree",name:"Tree of Alpha",p:"JSON",kind:"http",exp:120000,to:["news"],ep:["news.treeofalpha.com/api/news"],data:"Fil crypto à la minute : dépêches des comptes d'actu (The Block, CoinDesk, Wu Blockchain, Lookonchain…), annonces des exchanges (listings, delistings), SEC / Maison-Blanche.",freq:"Toutes les 20 s"},
+  {id:"tg",name:"News Telegram (relais)",p:"REST",kind:"http",exp:180000,to:["news","veille"],ep:["…workers.dev/tg"],data:"Walter Bloomberg, Watcher Guru, PhoenixNews, BWEnews, unfolded et Whale Alert (transferts de plus de 50 M$), via le relais Cloudflare du Desk.",freq:"1 fois par minute, onglet visible"},
+  {id:"iapay",name:"IA payantes (au choix)",p:"REST",kind:"http",exp:900000,to:["veille"],ep:["api.openai.com","api.anthropic.com","api.x.ai","api.perplexity.ai","api.deepseek.com","api.mistral.ai"],data:"ChatGPT, Claude, Grok, Perplexity, DeepSeek ou Mistral comme cerveau de l'agent de veille, avec la clé API de l'utilisateur (gardée dans le navigateur).",freq:"Toutes les 2 à 10 min, seulement avec une clé"},
+  {id:"openrouter",name:"OpenRouter (IA)",p:"REST",kind:"http",exp:900000,to:["veille"],ep:["openrouter.ai/api/v1/chat/completions"],data:"Un des cerveaux possibles de l'agent de veille (modèles gratuits, 50 analyses par jour). Clé personnelle, gardée dans le navigateur.",freq:"En relais, seulement avec une clé"},
+  {id:"gemini",name:"Gemini (IA)",p:"REST",kind:"http",exp:900000,to:["veille"],ep:["generativelanguage.googleapis.com/v1beta/models/…:generateContent"],data:"Un des cerveaux possibles de l'agent de veille : reçoit l'état du marché et décide quoi dire. Clé personnelle, gardée dans le navigateur.",freq:"Toutes les 2 à 10 min, seulement avec une clé"},
   {id:"robot",name:"Robot GitHub",p:"JSON",kind:"http",exp:1800000,to:["journee","news"],ep:["…github.io/desk/data/calendar.json","…/data/news.json","…/data/fj.json"],data:"Agenda économique de la semaine et de la suivante (prévisions, chiffres précédents), news crypto de 6 sites traduites en français, copie de secours de FinancialJuice.",freq:"Mis à jour toutes les 10 min par GitHub"},
   {id:"ff",name:"Forex Factory (allorigins)",p:"REST",kind:"fb",exp:900000,to:["journee"],ep:["api.allorigins.win/raw?url=…ff_calendar_thisweek.json"],data:"Calendrier de la semaine, secours de l'agenda.",freq:"Après échec du relais"},
   {id:"tr",name:"Traduction",p:"REST",kind:"od",to:["news"],ep:["translate.googleapis.com (gtx)","api.mymemory.translated.net (secours)"],data:"Titres de news traduits en français.",freq:"À chaque nouvelle news"}

@@ -15,8 +15,9 @@ CK.reduce = reduce;
 var DEF = {
   id:"captain", name:"captain", tagline:"Trading · Desk", data:"", accent:"#FF8A3D", theme:"dark", beginner:false,
   watchlist:["BTC","ETH","SOL"],
-  modules:{day:true,map:true,events:true,deriv:true,liq:true,movers:true,screener:true,news:true,levels:true,opts:true,book:true,corr:true,net:true},
+  modules:{day:true,map:true,events:true,deriv:true,liq:true,movers:true,screener:true,news:true,levels:true,opts:true,book:true,corr:true,net:true,veille:true},
   layout:null,
+  espaces:{journee:true,macro:true,screener:true,liq:true,news:true,veille:true,net:true},   // false = espace masqué (accueil, navigation, raccourcis)
   moversMarket:"spot", moversMinVolume:2000000, liqMin:25000,
   screenerPreset:"compression", screenerMax:150, newsLang:"fr"
 };
@@ -56,7 +57,7 @@ function logo(base){return '<img class="lo" alt="" loading="lazy" src="https://s
 var NET={};CK.NET=NET;
 function netId(url){url=String(url);
   var R=[["ws.okx.com","okxws"],["stream.bybit.com","bybit"],["fstream.binance.com","binws"],["okx.com/api","okx"],["fapi.binance.com","binfx"],["scanner.tradingview.com","tvscan"],
-    ["alternative.me","fng"],["financialjuice.com","fj"],["treeofalpha.com","tree"],["github.io","robot"],["allorigins","ff"],["translate.googleapis.com","tr"],["api.bybit.com","bybitrest"],["api.bitget.com","bitget"],["hyperliquid.xyz","hl"],["deribit.com","deribit"],["coinbase.com","coinbase"],["mymemory","tr"],["tradingview.com","tvw"]];
+    ["alternative.me","fng"],["financialjuice.com","fj"],["treeofalpha.com","tree"],["workers.dev","tg"],["github.io","robot"],["generativelanguage.googleapis.com","gemini"],["api.mistral.ai","iapay"],["api.openai.com","iapay"],["api.anthropic.com","iapay"],["api.x.ai","iapay"],["api.perplexity.ai","iapay"],["api.deepseek.com","iapay"],["openrouter.ai","openrouter"],["allorigins","ff"],["translate.googleapis.com","tr"],["api.bybit.com","bybitrest"],["api.bitget.com","bitget"],["hyperliquid.xyz","hl"],["deribit.com","deribit"],["coinbase.com","coinbase"],["mymemory","tr"],["tradingview.com","tvw"]];
   for(var i=0;i<R.length;i++)if(url.indexOf(R[i][0])>=0)return R[i][1];return null;}
 function netRec(id){return NET[id]||(NET[id]={calls:0,ok:0,err:0,lastOk:0,lastErr:0,ms:0,msg:"",code:0,open:false,opens:0,closes:0,lastMsg:0,msgs:[],openTs:0});}
 function netOk(url,t0){var id=netId(url);if(!id)return;var r=netRec(id);r.calls++;r.ok++;r.lastOk=Date.now();r.ms=Math.round(performance.now()-t0);}
@@ -86,7 +87,7 @@ CK.u={$:$,safeUrl:safeUrl,nf:nf,px:px,pct:pct,usd:usd,cls:cls,esc:esc,ago:ago,du
 var S = CK.S = {
   tick:{}, ct:{}, mk:{}, factors:[], prevImpact:{},
   liqHist:[], liqSeen:{}, movers:{spot:[],perp:[]},
-  news:{macro:[],crypto:[],wire:[]}, newsTab:"macro", cal:[], nextEv:null,
+  news:{macro:[],crypto:[],wire:[]}, newsTab:(function(){var t="";try{t=localStorage.getItem("ck:newsTab")||"";}catch(e){}return /^(tout|x|macro|crypto|articles)$/.test(t)?t:"tout";})(), cal:[], nextEv:null,
   fund:{}, oi:null, fg:null, btcD:[], since:Date.now()
 };
 
@@ -143,7 +144,9 @@ function applyIdentity(){
   document.querySelector(".brand").classList.toggle("custom",nm!=="captain");
   var fav=document.querySelector('link[rel="icon"]');if(!fav){fav=document.createElement("link");fav.rel="icon";fav.type="image/png";fav.href=LOGO.fav;document.head.appendChild(fav);}
   document.body.classList.toggle("beginner",!!C.beginner);
-  Object.keys(DEF.modules).forEach(function(k){var on=!C.modules||C.modules[k]!==false;document.querySelectorAll('[data-mod="'+k+'"]').forEach(function(el){el.hidden=!on;});});
+  /* Un bloc disparaît aussi si son espace est décoché dans le Studio (ex. Screener) */
+  var ESPM={day:"journee",events:"journee",map:"macro",screener:"screener",liq:"liq",deriv:"liq",movers:"liq",news:"news",veille:"veille",net:"net"},E=C.espaces||{};
+  Object.keys(DEF.modules).forEach(function(k){var on=(!C.modules||C.modules[k]!==false)&&!(ESPM[k]&&E[ESPM[k]]===false);document.querySelectorAll('[data-mod="'+k+'"]').forEach(function(el){el.hidden=!on;});});
   if(CK.layout)CK.layout.refresh();
 }
 CK.applyIdentity=applyIdentity;
@@ -562,28 +565,72 @@ function loadCryptoNews(){
    API publique, sans clé, 30 appels/min max : 1 appel toutes les 20 s (1 min si l'onglet est caché),
    un seul onglet appelle, les autres reprennent son résultat. On ne garde que les dépêches (pas d'articles de blog
    ni de tweets marketing de projets). */
-var WIRE_URL="https://news.treeofalpha.com/api/news?limit=120";
+var WIRE_URL="https://news.treeofalpha.com/api/news?limit=200";
+/* Trump et la Maison-Blanche : tous les posts (X et Truth Social), ils font bouger le marché */
+var WONCH=/^(lookonchain|arkham|spotonchain|EmberCN|ai_9684xtpa|whale_alert|OnchainLens|cryptoquant_com|glassnode|santimentfeed|nansen_ai|PeckShieldAlert|CertiKAlert)$/i,WMAC=/^(DeItaone|zerohedge|FirstSquawk|KobeissiLetter|unusual_whales|WalterBloomberg|Fxhedgers|LiveSquawk|financialjuice|NickTimiraos)$/i,WTRUMP=/^(realDonaldTrump|WhiteHouse|POTUS)$/i,WCAMP=/^(TeamTrump|DonaldJTrumpJr|EricTrump|TrumpWarRoom)$/i;
 var WACC=/^(TheBlockCo|CoinDesk|WuBlockchain|lookonchain|WatcherGuru|tier10k|WalterBloomberg|DeItaone|zerohedge|FirstSquawk|Cointelegraph|BitcoinMagazine|whale_alert|arkham|spotonchain|EmberCN|ai_9684xtpa|solidintel_x|unfolded|AggrNews|cz_binance|_RichardTeng|heyibinance|binance|saylor|Strategy|coinbase|CoinbaseMarkets|brian_armstrong|krakenfx|okx|Bybit_Official|benbybit|HyperliquidX|Grayscale|BlackRock|tether|paoloardoino|circle|VitalikButerin|CryptoHayes|KobeissiLetter|BitcoinNewsCom|DegenerateNews|MarioNawfal|Polymarket|SECGov|CFTC|federalreserve|POTUS|WhiteHouse|EricTrump|worldlibertyfi|glassnode|cryptoquant_com|nansen_ai|PeckShieldAlert|CertiKAlert|zachxbt|realDonaldTrump|elonmusk)$/i;
 var WVIP=/^(realDonaldTrump|elonmusk|POTUS|WhiteHouse|cz_binance|heyibinance|VitalikButerin|saylor|CryptoHayes)$/i,WMKT=/\b(bitcoin|btc|crypto|doge|ether|tariff|fed\b|rates?\b|economy|stock|market|china|deal|trade|dollar|inflation|reserve|treasury|bank)/i;
 var WEX=/(will (list|delist|launch|add|support)|lists?\b|listing|delist|launchpool|hodler|megadrop|perpetual|futures|airdrop|suspend|halt|maintenance of (deposit|withdraw))/i,WNOISE=/(earn\b|tournament|competition|campaign|vouchers?|yield arena|promotion|giveaway|share up to|apr\b|rewards? pool|wallet maintenance)/i;
-var WIRE={ts:0};
+var WIRE={ts:0,tree:[],tg:[]};
+/* ---------- News Telegram (Walter Bloomberg, Watcher Guru, PhoenixNews, BWEnews, unfolded, Whale Alert) ----------
+   Via le relais Cloudflare du Desk (relais/desk-news-worker.js), commun à tous les utilisateurs.
+   Une seule requête par minute pour toutes les chaînes, seulement quand l'onglet est visible et dans un seul onglet. Vide = désactivé. */
+var TG_URL="https://desk-news.captainmanagement8.workers.dev";
 function wireParse(a){var out=[],seen={};
-  (Array.isArray(a)?a:[]).forEach(function(x){if(!x||!x.title||!x.time)return;var s=x.source||"",t=String(x.en||x.title).replace(/\s+/g," ").trim(),src="",keep=false;
-    if(s==="Twitter"){var m=t.match(/^(.{1,60}?) \(@([A-Za-z0-9_]+)\):\s*(.*)$/);if(!m)return;var h=m[2];if(!WACC.test(h))return;
-      t=m[3];src=m[1].replace(/[^\w\s.&'-]/g,"").trim()||"@"+h;keep=!WVIP.test(h)||WMKT.test(t);
+  (Array.isArray(a)?a:[]).forEach(function(x){if(!x||!x.title||!x.time)return;var s=x.source||"",t=String(x.en||x.title).replace(/\s+/g," ").trim(),src="",keep=false,kind="tree",h="",nm="";
+    if(s==="Twitter"){var m=t.match(/^(.{1,60}?) \(@([A-Za-z0-9_]+)\):\s*(.*)$/);if(!m)return;h=m[2];
+      t=m[3];nm=m[1].replace(/[^\w\s.&'-]/g,"").trim()||"@"+h;src=nm;kind="x";keep=WTRUMP.test(h)||(!WVIP.test(h)&&!WCAMP.test(h))||WMKT.test(t);
       t=t.replace(/^(NEW|JUST IN|BREAKING|THE BLOCK|POLICY|MARKETS|FINANCE|TECH|DEALS|UPDATE|ALERT)\s*:\s*/i,function(k){return /BREAKING|JUST IN/i.test(k)?"BREAKING: ":"";});}
     else if(s==="Terminal"){src="Tree News";keep=true;}
-    else if(s==="usGov"){src=x.sourceName||"Gouvernement US";keep=true;}
+    else if(s==="usGov"){src=x.sourceName||"Gouvernement US";keep=true;kind="gov";}
     else if(s==="Blogs"||s==="Proposals"||!s){return;}
-    else{src=s.replace(/\s+EN$/,"");keep=WEX.test(t)&&!WNOISE.test(t);}
-    if(!keep||t.length<12)return;
-    t=t.replace(/https?:\/\/\S+/g,"").replace(/\s+/g," ").trim();/* une dépêche = un titre : première phrase si le texte est long */
-    if(t.length>150){var cut=t.search(/[.!?](\s|$)/);if(cut>40&&cut<220)t=t.slice(0,cut+1);}if(t.length>220)t=t.slice(0,217)+"…";
+    else{src=s.replace(/\s+EN$/,"");keep=WEX.test(t)&&!WNOISE.test(t);kind="ex";}
+    if(!keep||(kind!=="x"&&t.length<12))return;
+    t=t.replace(/https?:\/\/\S+/g,"").replace(/\s+/g," ").trim();
+    if(kind==="x"&&t.length<3)t="Publication sans texte (image ou vidéo) : ouvre le post pour la voir.";
+    /* Une dépêche = un titre (première phrase si le texte est long) ; un tweet garde son texte, jusqu'à 280 caractères */
+    if(kind!=="x"&&t.length>150){var cut=t.search(/[.!?](\s|$)/);if(cut>40&&cut<220)t=t.slice(0,cut+1);}
+    var lim=kind==="x"?280:220;if(t.length>lim)t=t.slice(0,lim-3)+"…";
     var k=t.slice(0,80).toLowerCase();if(seen[k])return;seen[k]=1;
     var sy=[];(x.symbols||[]).forEach(function(q){var c=String(q).split("_")[0];if(c&&sy.indexOf(c)<0&&sy.length<3)sy.push(c);});
-    out.push({title:t,link:x.url||"https://news.treeofalpha.com",ts:+x.time,src:src,lang:"en",sym:sy,fsrc:src});});
-  return out.sort(function(a,b){return b.ts-a.ts;}).slice(0,60);}
-function wireApply(items,ts){S.news.wire=items;WIRE.ts=ts||Date.now();S.wireErr=0;renderNewsSoft();if(CK.onWire)try{CK.onWire(items);}catch(e){}}
+    var img=function(u){return /^https:\/\/(pbs\.twimg\.com|tgstatic\.treeofalpha\.com)\//.test(String(u||""))?String(u):"";};
+    out.push({title:t,link:x.url||"https://news.treeofalpha.com",ts:+x.time,src:src,lang:"en",sym:sy,fsrc:src,kind:kind,h:h,icon:kind==="x"?img(x.icon):"",img:kind==="x"?img(x.image):"",vip:kind==="x"&&(WVIP.test(h)||WTRUMP.test(h)),trump:kind==="x"&&WTRUMP.test(h),grp:kind!=="x"?"":WTRUMP.test(h)?"trump":WONCH.test(h)?"onchain":WMAC.test(h)?"macro":"news",gros:kind==="x"&&(WACC.test(h)||WVIP.test(h)||WTRUMP.test(h)),truth:/^https:\/\/truthsocial\.com\//.test(String(x.url||""))});});
+  return out.sort(function(a,b){return b.ts-a.ts;}).slice(0,140);}
+function wireMix(){var seen={},L=WIRE.tree.concat(WIRE.tg).sort(function(a,b){return b.ts-a.ts;}).filter(function(x){var k=x.title.slice(0,60).toLowerCase().replace(/[^a-z0-9]/g,"");if(seen[k])return false;seen[k]=1;return true;}).slice(0,160);
+  S.news.wire=L;renderNewsSoft();if(CK.onWire)try{CK.onWire(L);}catch(e){}}
+function wireApply(items,ts){WIRE.tree=items;WIRE.ts=ts||Date.now();S.wireErr=0;wireMix();}
+function tgApply(items,ts,agent){WIRE.tg=items;WIRE.tgTs=ts||Date.now();wireMix();if(agent){S.agent=agent;if(CK.onAgent)try{CK.onAgent(agent);}catch(e){}}}
+function tgShared(){var c=lsj("tg");if(c&&c.items&&c.ts>(WIRE.tgTs||0)&&Date.now()-c.ts<600000){tgApply(c.items,c.ts,c.agent);return true;}return false;}
+/* L'agent IA tourne sur le relais : le Desk lit son fil dans la même requête que les news Telegram (toutes les 30 s quand l'agent est à l'écran, sinon toutes les minutes) */
+function agentVisible(){var h=document.getElementById("veille");return !!(h&&h.offsetParent);}
+/* Fréquence d'appel du relais. Version publique : toutes les 3 min si l'Agent ou les News sont à l'écran, sinon toutes les 10 min
+   (l'agent n'écrit que toutes les 30 min) : le relais gratuit tient ainsi un afflux de spectateurs. */
+function newsVisible(){var h=document.getElementById("news");return !!(h&&h.offsetParent);}
+function tgDelai(){if(!window.CK_PUBLIC)return agentVisible()?30000:60000;return (agentVisible()||newsVisible())?180000:600000;}
+CK.tgDelai=tgDelai;
+function loadTG(){
+  if(!TG_URL||document.hidden)return Promise.resolve();var now=Date.now();tgShared();
+  if(now-(+(CK.ls("tgLock")||0))<tgDelai()-5000)return Promise.resolve();
+  CK.ls("tgLock",String(now));
+  return fetchJSON(TG_URL.replace(/\/$/,"")+"/tg",null,12000).then(function(j){
+    var ag=j&&j.agent&&typeof j.agent==="object"?j.agent:null;
+    var avs=(j&&j.tg&&j.tg.av)||{};
+    var items=(j&&((j.tg&&j.tg.msgs)||j.msgs)||[]).filter(function(m){return m&&m.t&&m.ts;}).slice(0,180).map(function(m){if(!m.av&&avs[m.c])m.av=avs[m.c];return tgItem(m);}).filter(Boolean);
+    S.tgErr=0;lsj("tg",{ts:Date.now(),items:items,agent:ag});tgApply(items,null,ag);}).catch(function(){S.tgErr=(S.tgErr||0)+1;if(CK.onAgent&&S.tgErr>=2)try{CK.onAgent(S.agent);}catch(e){}});
+}
+/* Les comptes « insider » relayés sur Telegram, rangés par groupe */
+var TGC={walterbloomberg:"macro",thekobeissiletter:"macro",marketfeed:"macro",WatcherGuru:"news",PhoenixNewsImportant:"news",BWEnews:"news",unfolded:"news",wublockchainenglish:"news",
+  lookonchainchannel:"onchain",spotonchain:"onchain",onchainlens:"onchain",ai_9684xtpa:"onchain",arkhamintelligence:"onchain",cryptoquant_official:"onchain",whale_alert_io:"onchain",
+  binance_announcements:"ex",bybit_announcements:"ex",okxannouncements:"ex"};
+function tgCdn(u){return /^https:\/\/cdn\d*\.(telesco\.pe|cdn-telegram\.org)\//.test(String(u||""))?String(u):"";}
+function tgItem(m){var c=String(m.c||""),g=TGC[c]||"news",t=String(m.t).replace(/https?:\/\/\S+/g,"").replace(/\s+/g," ").trim(),src=String(m.src||"Telegram");
+  if(t.length<8)return null;
+  /* Market News Feed : on garde les titres macro, pas les résultats d'entreprises (EPS, chiffre d'affaires, « est. ») */
+  if(c==="marketfeed"&&/(\bEPS\b|\bEST\b|\bEST\.|\bREV\b|\bQ[1-4]\b|EARNINGS|\bSALES\b|NET INCOME|ADJ\.?\s|GUIDANCE|^\$?[A-Z]{1,5}\s*\|)/i.test(t))return null;
+  var base={title:t,link:/^https:\/\/t\.me\//.test(m.u)?m.u:"https://t.me/",ts:+m.ts,src:src,lang:/[\u3400-\u9fff]/.test(t)?"zh":"en",sym:[],fsrc:src};
+  if(g==="ex"){if(!WEX.test(t)||WNOISE.test(t))return null;base.kind="ex";return base;}
+  base.kind="x";base.via="tg";base.h=c;base.grp=g;base.gros=true;base.icon=tgCdn(m.av);base.img=tgCdn(m.img);return base;}
+CK.loadTG=loadTG;CK.tgUrl=function(){return TG_URL;};
 function wireShared(){var c=lsj("wire");if(c&&c.items&&c.ts>WIRE.ts&&Date.now()-c.ts<600000){wireApply(c.items,c.ts);return true;}return false;}
 function loadWire(){
   var now=Date.now();wireShared();
@@ -592,9 +639,43 @@ function loadWire(){
   return fetchJSON(WIRE_URL,null,12000).then(function(a){var items=wireParse(a);if(!items.length)throw 0;lsj("wire",{ts:Date.now(),items:items});wireApply(items);})
     .catch(function(){S.wireErr=(S.wireErr||0)+1;if(!S.news.wire.length)renderNewsSoft();});
 }
-window.addEventListener("storage",function(e){if(e.key&&/:wire$/.test(e.key))wireShared();});
+window.addEventListener("storage",function(e){if(e.key&&/:wire$/.test(e.key))wireShared();if(e.key&&/:tg$/.test(e.key))tgShared();});
 CK.loadWire=loadWire;
+/* ---------- Fil « Tout » et fil « X » : toutes les sources réunies, une couleur par catégorie ----------
+   X = tweets des gros comptes (via Tree of Alpha, avec photo et image) · Macro = FinancialJuice · Crypto = dépêches et chaînes Telegram
+   Exchange = annonces de listing · Article = sites crypto. Les nouveautés arrivent avec une courte animation. */
+var NCAT={x:["X","nx"],macro:["Macro","nm"],tree:["Crypto","nc"],tg:["Crypto","nc"],gov:["Gouv. US","ng"],ex:["Exchange","ne"],art:["Article","na"]};
+var NSEEN=null;
+function newsTout(){var seen={},L=[];
+  S.news.macro.forEach(function(x){L.push(Object.assign({kind:"macro"},x));});
+  S.news.wire.forEach(function(x){if(x.kind==="x"&&!x.gros)return;L.push(Object.assign({kind:x.kind||"tree"},x));});
+  S.news.crypto.forEach(function(x){L.push(Object.assign({kind:"art"},x));});
+  return L.filter(function(x){if(!x||!x.title||!x.ts)return false;var k=x.title.slice(0,60).toLowerCase().replace(/[^a-z0-9]/g,"");if(seen[k])return false;seen[k]=1;return true;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,70);}
+function initiales(n){var p=String(n||"?").replace(/[^A-Za-zÀ-ÿ0-9 ]/g,"").trim().split(/\s+/);return ((p[0]||"?")[0]+((p[1]||"")[0]||"")).toUpperCase();}
+function chrono(ts){var s=Math.max(0,Math.round((Date.now()-ts)/1000));return s<60?s+" s":s<3600?Math.floor(s/60)+" min":s<86400?Math.floor(s/3600)+" h":Math.floor(s/86400)+" j";}
+function newsRich(host,L,lang){
+  var premier=!NSEEN;NSEEN=NSEEN||{};var n=0;
+  var html=L.map(function(x){
+    var id=x.link+"|"+x.ts,neuf=!premier&&!NSEEN[id];NSEEN[id]=1;
+    var t=(lang==="fr"&&x.lang!=="fr"&&TR[x.title])?TR[x.title]:x.title;t=t.replace(/^(RUPTURE|DERNI[ÈE]RE MINUTE|DERNI[ÈE]RES? (HEURE|NOUVELLES?)|FLASH INFO|URGENT)\s*:/i,"BREAKING :");var br=/^[^A-Za-z]*(BREAKING|JUST IN|URGENT|FLASH)(?![A-Za-z])/i.test(x.title),C=NCAT[x.kind]||NCAT.tree;
+    var anim=neuf?' style="--d:'+Math.min(6,n++)*45+'ms"':'';
+    var sy=x.sym&&x.sym.length?'<span class="nr-sy">'+x.sym.map(function(c){return '<b>'+esc(c)+'</b>';}).join("")+'</span>':"";
+    if(x.kind==="x"){
+      var av=x.icon?'<img src="'+esc(x.icon)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<span>'+esc(initiales(x.src))+'</span>';
+      return '<a class="nr tw'+(x.gros?"":" proj")+(x.img?" hasimg":"")+(neuf?" in":"")+(br?" br":"")+(x.vip?" vip":"")+'"'+anim+' href="'+esc(safeUrl(x.link))+'" target="_blank" rel="noopener noreferrer">'+
+        '<span class="nr-av">'+av+'</span><div class="nr-b"><div class="nr-who"><b>'+esc(x.src)+'</b>'+(x.via==="tg"?'<em class="nr-tgb">Telegram</em>':'<span>@'+esc(x.h)+'</span>')+(x.vip?'<em class="nr-vip">VIP</em>':'')+(x.truth?'<em class="nr-truth">Truth Social</em>':'')+(!x.gros?'<em class="nr-proj">Projet</em>':'')+'<i class="nr-t" data-ts="'+x.ts+'">'+chrono(x.ts)+'</i>'+(x.truth||x.via==="tg"?'':'<svg class="nr-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.8 8 10.2h-6.3l-4.9-6.4-5.6 6.4H2.2l7.3-8.3L1.8 3h6.4l4.4 5.9L17.8 3Zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5Z"/></svg>')+'</div>'+
+        '<p class="nr-tx">'+esc(t)+'</p>'+sy+'</div>'+(x.img?'<span class="nr-img"><img src="'+esc(x.img)+'" alt="" loading="lazy" referrerpolicy="no-referrer"></span>':'')+'</a>';
+    }
+    return '<a class="nr '+C[1]+(neuf?" in":"")+(br?" br":"")+'"'+anim+' href="'+esc(safeUrl(x.link))+'" target="_blank" rel="noopener noreferrer"><div class="nr-who"><em class="nr-cat">'+(br?"Breaking":C[0])+'</em><span>'+esc(x.src||"")+'</span><i class="nr-t" data-ts="'+x.ts+'">'+chrono(x.ts)+'</i></div><p class="nr-tx">'+esc(t)+'</p>'+sy+'</a>';
+  }).join("");
+  var fx=S.newsTab==="x"?'<div class="nr-f" role="group" aria-label="Filtrer les tweets">'+[["tous","Tous"],["onchain","Onchain"],["macro","Macro"],["news","News"],["trump","Trump"]].map(function(z){return '<button type="button" data-xf="'+z[0]+'" aria-pressed="'+((S.xFiltre||"tous")===z[0])+'">'+z[1]+'</button>';}).join("")+'</div>':'';
+  host.innerHTML=fx+'<div class="nr-l">'+(html||'<p class="nr-vide">Aucun tweet pour ce filtre dans les dernières heures.</p>')+'</div>';
+}
+/* Les « il y a » des cartes avancent tout seuls */
+setInterval(function(){document.querySelectorAll(".nr-t[data-ts]").forEach(function(e){e.textContent=chrono(+e.getAttribute("data-ts"));});},10000);
 function newsList(){
+  if(S.newsTab==="tout")return newsTout();
+  if(S.newsTab==="x"){var xf=S.xFiltre||"tous";return S.news.wire.filter(function(x){return x.kind==="x"&&x.gros&&(xf==="tous"||x.grp===xf);});}
   if(S.newsTab==="crypto"&&S.news.wire.length)return S.news.wire;
   if(S.newsTab==="articles"||S.newsTab==="crypto"){if(S.news.crypto.length)return S.news.crypto;
     return S.news.macro.filter(function(x){return /bitcoin|btc|crypto|ether|stablecoin|coinbase|binance|blackrock|etf|token|blockchain|saylor|strategy/i.test(x.title);});}
@@ -604,11 +685,12 @@ function renderNews(){
   var host=$("news");if(!host)return;var tab=S.newsTab;
   var src=$("newsSrc");if(!src){var hd=host.closest(".mod")&&host.closest(".mod").querySelector(".mhd");if(hd){src=document.createElement("span");src.className="meta news-src";src.id="newsSrc";hd.appendChild(src);}}
   if(src){var m=S.news.macro[0],age=m&&m.ts?ago(m.ts):"";src.innerHTML=tab==="macro"&&FJ.src?(FJ.src==="direct"?'<i class="ns-live"></i>Direct · dernière news '+age:'<i class="ns-rb"></i>Copie du robot · dernière news '+age):
-    tab==="crypto"&&S.news.wire.length?'<i class="ns-live"></i>Fil en direct · dernière dépêche '+ago(S.news.wire[0].ts):tab==="articles"?"Articles · 6 sites, toutes les 10 min":"";}
+    (tab==="tout"||tab==="x")&&S.news.wire.length?'<i class="ns-live"></i>'+(tab==="x"?"Comptes X et insiders en direct":"Toutes les sources en direct"):tab==="crypto"&&S.news.wire.length?'<i class="ns-live"></i>Fil en direct · dernière dépêche '+ago(S.news.wire[0].ts):tab==="articles"?"Articles · 6 sites, toutes les 10 min":"";}
   document.querySelectorAll("#newsSeg button").forEach(function(b){b.setAttribute("aria-pressed",b.getAttribute("data-n")===tab?"true":"false");});
   var lang=S.newsLang||C.newsLang||"fr";$("newsLang").textContent=lang==="fr"?"FR":"VO";$("newsLang").setAttribute("aria-pressed",lang==="fr"?"true":"false");
-  var L=newsList().slice(0,40);
-  if(!L.length){host.innerHTML='<div class="empty">'+(tab==="macro"?(S.fjErr?"FinancialJuice ne répond pas pour le moment, nouvel essai dans quelques minutes.":"Connexion à FinancialJuice…"):"Chargement des news crypto…")+'</div>';return;}
+  var L=newsList().slice(0,tab==="x"?120:tab==="tout"?80:40);
+  if(!L.length){host.innerHTML='<div class="empty">'+(tab==="macro"?(S.fjErr?"FinancialJuice ne répond pas pour le moment, nouvel essai dans quelques minutes.":"Connexion à FinancialJuice…"):(tab==="x"?"Connexion au fil des tweets…":"Chargement des news…"))+'</div>';return;}
+  if(tab==="tout"||tab==="x"){newsRich(host,L,lang);if(lang==="fr")translate(L);return;}
   var note=tab==="crypto"&&!S.news.wire.length&&S.news.crypto.length?'<div class="lq-note" style="margin-bottom:6px">Fil en direct indisponible : derniers articles en attendant.</div>':tab==="articles"&&S.cryptoErr?'<div class="lq-note" style="margin-bottom:6px">Articles crypto indisponibles pour le moment : headlines crypto de FinancialJuice en attendant.</div>':"";
   host.innerHTML=note+L.map(function(x){var t=(lang==="fr"&&x.lang!=="fr"&&TR[x.title])?TR[x.title]:x.title;
     var sy=x.sym&&x.sym.length?' · '+x.sym.map(function(c){return '<b class="nw-s">'+esc(c)+'</b>';}).join(""):"";
@@ -626,7 +708,7 @@ function translate(L){
 var softT=null;function renderNewsSoft(){clearTimeout(softT);softT=setTimeout(renderNews,200);}
 function trGoogle(list){
   var q=list.map(function(s){return s.replace(/\n/g," ");}).join("\n");
-  return fetchJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fr&dt=t&q="+encodeURIComponent(q),null,10000).then(function(j){
+  return fetchJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q="+encodeURIComponent(q),null,10000).then(function(j){
     var parts=(j[0]||[]).map(function(s){return s[0];}).join("").split("\n").map(function(s){return s.trim();});if(parts.length!==list.length)throw 0;return parts;});
 }
 function trMyMemory(list){
@@ -666,7 +748,8 @@ function wire(){
   document.querySelectorAll("[data-theme-set]").forEach(function(b){b.addEventListener("click",function(){setTheme(b.getAttribute("data-theme-set"),b);});});
   document.addEventListener("click",function(e){var c=e.target.closest("[data-chart]");if(!c||e.target.closest(".star")||document.body.classList.contains("editing"))return;e.preventDefault();openChart(c.getAttribute("data-chart"),c.getAttribute("data-title"));});
   $("moversSeg").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;S.moversMkt=b.getAttribute("data-m");renderMovers();});
-  $("newsSeg").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;S.newsTab=b.getAttribute("data-n");renderNews();$("news").scrollTop=0;});
+  $("news").addEventListener("click",function(e){var b=e.target.closest("[data-xf]");if(!b)return;e.preventDefault();S.xFiltre=b.getAttribute("data-xf");renderNews();});
+  $("newsSeg").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;S.newsTab=b.getAttribute("data-n");try{localStorage.setItem("ck:newsTab",S.newsTab);}catch(x){}renderNews();$("news").scrollTop=0;});
   $("newsLang").addEventListener("click",function(){S.newsLang=(S.newsLang||C.newsLang||"fr")==="fr"?"vo":"fr";renderNews();});
   document.querySelectorAll("[data-help]").forEach(function(b){b.addEventListener("click",function(){var k=b.getAttribute("data-help"),box=document.querySelector('[data-helpbox="'+k+'"]');if(!box)return;box.textContent=HELP[k]||"";box.hidden=!box.hidden;});});
   document.addEventListener("visibilitychange",function(){if(!document.hidden){paintTicks();renderLiqSum();}});
@@ -679,7 +762,7 @@ function safe(fn){try{fn();}catch(e){if(window.console)console.error("[cockpit]"
 CK.boot=function(){
   applyIdentity();syncThemeBtns();buildStrip();wire();
   S.moversMkt=C.moversMarket;S.newsLang=C.newsLang;
-  [function(){if(CK.bg)CK.bg.boot();},function(){if(CK.layout)CK.layout.boot();},function(){if(CK.day)CK.day.boot();},function(){if(CK.map)CK.map.boot();},function(){if(CK.liqmap)CK.liqmap.boot();},function(){if(CK.pos)CK.pos.boot();},function(){if(CK.extra)CK.extra.boot();},function(){if(CK.screener)CK.screener.boot();},function(){if(CK.ui)CK.ui.boot();},function(){if(CK.hub)CK.hub.boot();},function(){if(CK.worlds)CK.worlds.boot();},function(){if(CK.sound)CK.sound.boot();},function(){if(CK.net)CK.net.boot();}].forEach(safe);
+  [function(){if(CK.bg)CK.bg.boot();},function(){if(CK.layout)CK.layout.boot();},function(){if(CK.day)CK.day.boot();},function(){if(CK.map)CK.map.boot();},function(){if(CK.liqmap)CK.liqmap.boot();},function(){if(CK.pos)CK.pos.boot();},function(){if(CK.extra)CK.extra.boot();},function(){if(CK.veille)CK.veille.boot();},function(){if(CK.screener)CK.screener.boot();},function(){if(CK.ui)CK.ui.boot();},function(){if(CK.hub)CK.hub.boot();},function(){if(CK.worlds)CK.worlds.boot();},function(){if(CK.sound)CK.sound.boot();},function(){if(CK.net)CK.net.boot();}].forEach(safe);
   renderLiqSum();renderNews();
   loadInstruments().then(function(){startSockets();seedLiq();});
   loadMacro();
@@ -687,6 +770,10 @@ CK.boot=function(){
   loadMovers().then(function(){if(CK.screener)CK.screener.start();});
   loadCalendar();loadFJ();loadCryptoNews();loadWire();
   (function wl(){setTimeout(function(){loadWire().then(wl,wl);},document.hidden?60000:20000);})();
+  loadTG();(function tl(){setTimeout(function(){loadTG().then(tl,tl);},tgDelai());})();
+  document.addEventListener("visibilitychange",function(){if(!document.hidden&&Date.now()-(WIRE.tgTs||0)>Math.min(tgDelai(),180000))loadTG();});
+  /* On ouvre l'Agent ou les News avec des données de plus de 3 min : on les rafraîchit tout de suite */
+  setInterval(function(){if(!document.hidden&&(agentVisible()||newsVisible())&&Date.now()-(WIRE.tgTs||0)>(window.CK_PUBLIC?180000:60000))loadTG();},15000);
   setInterval(function(){tickNext();tickFunding();},1000);
   setInterval(function(){renderLiqSum();document.querySelectorAll("[data-ago]").forEach(function(e){e.textContent=ago(+e.getAttribute("data-ago"));});},2000);
   setInterval(loadMacro,120000);

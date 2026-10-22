@@ -10,15 +10,19 @@
 "use strict";
 var CK=window.CK,u=CK.u;
 var COLS=12,ROW=10,GAP=16;
-var VIEWS=[
+var VIEWS0=[
   {id:"home",name:"Accueil",key:"0"},
   {id:"journee",name:"Journée",key:"1"},
   {id:"macro",name:"Signaux",key:"2"},
   {id:"screener",name:"Screener",key:"3"},
   {id:"liq",name:"Liquidations",key:"4"},
   {id:"news",name:"News",key:"5"},
-  {id:"net",name:"Connexions",key:"6"}
+  {id:"veille",name:"Agent",key:"6"},
+  {id:"net",name:"Connexions",key:"7"}
 ];
+/* Espaces décochés dans le Studio : retirés de la navigation */
+var VIEWS=VIEWS0.filter(function(v){var e=(CK.cfg&&CK.cfg().espaces)||{};return v.id==="home"||e[v.id]!==false;});VIEWS.forEach(function(v,i){if(v.id!=="home")v.key=String(i);});
+function viewOn(id){return VIEWS.some(function(v){return v.id===id;});}
 /* « Mondes » = l'écran de sélection (aucun bloc) ; chaque monde a sa grille */
 var DEFAULTS={
   home:[],
@@ -27,13 +31,14 @@ var DEFAULTS={
   screener:[{id:"screener",x:0,y:0,w:12,h:84},{id:"movers",x:0,y:84,w:12,h:40}],
   liq:[{id:"liq",x:0,y:0,w:8,h:84},{id:"book",x:8,y:0,w:4,h:84},{id:"deriv",x:0,y:84,w:12,h:50}],
   news:[{id:"news",x:0,y:0,w:8,h:84},{id:"events",x:8,y:0,w:4,h:84}],
-  net:[{id:"net",x:0,y:0,w:12,h:84}]
+  net:[{id:"net",x:0,y:0,w:12,h:84}],
+  veille:[{id:"veille",x:0,y:0,w:12,h:90}]
 };
 /* Où mène « Ouvrir » depuis un bloc */
 var DOOR={day:"journee",map:"macro",events:"journee",screener:"screener",liq:"liq",deriv:"liq",movers:"liq",news:"news"};
 var LAYV="9";
-var MIN={corr:[3,30],levels:[3,30],opts:[3,30],book:[3,30],net:[6,40],day:[6,28],map:[3,36],events:[2,24],deriv:[3,16],movers:[3,26],liq:[3,40],news:[3,24],screener:[3,36]};
-var NAMES={corr:"Corrélations du BTC",levels:"Niveaux clés",opts:"Options Deribit",book:"Carnet d'ordres agrégé",net:"Connexions",day:"Journée de trading",map:"Signaux",events:"Agenda éco",deriv:"Dérivés",liq:"Liquidations",movers:"Top mouvements",screener:"Screener",news:"News"};
+var MIN={veille:[6,40],corr:[3,30],levels:[3,30],opts:[3,30],book:[3,30],net:[6,40],day:[6,28],map:[3,36],events:[2,24],deriv:[3,16],movers:[3,26],liq:[3,40],news:[3,24],screener:[3,36]};
+var NAMES={veille:"Agent de veille",corr:"Corrélations du BTC",levels:"Niveaux clés",opts:"Options Deribit",book:"Carnet d'ordres agrégé",net:"Connexions",day:"Journée de trading",map:"Signaux",events:"Agenda éco",deriv:"Dérivés",liq:"Liquidations",movers:"Top mouvements",screener:"Screener",news:"News"};
 var grid,all={},view="home",lay=[],editing=false,stacked=false,ph=null;
 var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -72,7 +77,7 @@ function render(skip){
   stacked=grid.clientWidth<860;grid.classList.toggle("stacked",stacked);
   var inView={};lay.forEach(function(it){inView[it.id]=1;});
   [].forEach.call(grid.querySelectorAll(".mod"),function(m){var id=m.getAttribute("data-mod");m.classList.toggle("off",!inView[id]);
-    var go=m.querySelector(".door-go");if(go)go.hidden=!DOOR[id]||DOOR[id]===view;});
+    var go=m.querySelector(".door-go");if(go)go.hidden=!DOOR[id]||DOOR[id]===view||!viewOn(DOOR[id]);});
   var n=0,maxY=0;
   lay.slice().sort(function(a,b){return a.y-b.y||a.x-b.x;}).forEach(function(it){var m=mod(it.id);if(!m)return;
     if(stacked){m.style.transform="";m.style.width="";m.style.height="";grid.appendChild(m);}
@@ -132,7 +137,7 @@ function buildNav(){
     if(e.key==="Escape"&&view!=="home"&&!editing){e.preventDefault();show("home");}
   });
   /* Bouton « Ouvrir » dans l'en-tête des blocs qui ont une porte */
-  [].forEach.call(grid.querySelectorAll(".mod"),function(m){var id=m.getAttribute("data-mod"),hd=m.querySelector(".mhd");if(!DOOR[id]||!hd||hd.querySelector(".door-go"))return;
+  [].forEach.call(grid.querySelectorAll(".mod"),function(m){var id=m.getAttribute("data-mod"),hd=m.querySelector(".mhd");if(!DOOR[id]||!viewOn(DOOR[id])||!hd||hd.querySelector(".door-go"))return;
     var b=document.createElement("button");b.type="button";b.className="door-go";b.setAttribute("data-door",DOOR[id]);
     b.innerHTML='Ouvrir <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5"/></svg>';b.title="Ouvrir en plein écran ("+VIEWS.filter(function(v){return v.id===DOOR[id];})[0].name+")";hd.appendChild(b);
     m.style.viewTransitionName="m-"+id;});

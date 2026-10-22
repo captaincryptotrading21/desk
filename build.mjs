@@ -3,10 +3,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const rd = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
-const JS = ["core", "bg", "layout", "day", "signals", "liqmap", "pos", "extra", "screener", "ui", "net", "worlds", "sound"].map((f) => `${f}.js`);
+const JS = ["core", "bg", "layout", "day", "signals", "liqmap", "pos", "extra", "screener", "ui", "net", "veille", "worlds", "sound"].map((f) => `${f}.js`);
 const CSS = ["style.css", "worlds.css"];
 
-const js = JS.map(rd).join("\n");
+// Le manuel de l'agent (agent-manuel.md) est inséré dans veille.js
+const js = JS.map(rd).join("\n").replace('"@@MANUEL@@"', () => JSON.stringify(rd("agent-manuel.md")));
 const css = CSS.map(rd).join("\n");
 const cfg = rd("config.js");
 

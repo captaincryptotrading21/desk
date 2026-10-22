@@ -184,12 +184,12 @@ function renderBook(){
 /* FinancialJuice ne marque pas ses news rouges dans le flux RSS : on les reconnaît à leur contenu
    (chiffres macro publiés, banques centrales, annonces officielles, événements géopolitiques majeurs). */
 var FLASH=/(\bactual\b|\bbreaking\b|rate decision|rates? (unchanged|cut|hike)|\bholds? rates\b|fomc statement|powell|lagarde|ueda|\bbank of japan\b|\bboj\b.*(rate|hike|policy)|\becb\b.*(rate|decision)|emergency|\bmissile|\bairstrike|\binvad|ceasefire|\bnuclear\b|declares? war|\bsanctions? on\b|tariffs? (on|of)\b|\bsec (approves|sues|charges)|\betf (approv|reject)|\bhalts? trading|default|downgrade)/i;
-var flashOn=CK.ls("flash")!=="0",seen={},boot0=0,queue=[],showing=false,box=null;
+var flashOn=CK.ls("flash")!=="0",seen={},boot0=0,queue=[],showing=false,box=null,PAGE0=Date.now();
 CK.flash={on:function(){return flashOn;},set:function(v){flashOn=!!v;CK.ls("flash",v?"1":"0");}};
 function key(x){return x.title+"|"+x.ts;}
 CK.onNews=function(items){
   var now=Date.now();
-  if(!boot0){boot0=now;items.forEach(function(x){seen[key(x)]=1;});return;}
+  if(!boot0||now-PAGE0<25000){boot0=boot0||now;items.forEach(function(x){seen[key(x)]=1;});return;}
   items.slice(0,15).forEach(function(x){var k=key(x);if(seen[k])return;seen[k]=1;if(!flashOn||!FLASH.test(x.title)||(x.ts&&now-x.ts>15*60000))return;queue.push(x);});
   if(queue.length){if(CK.trNow)CK.trNow(queue);pump();}
 };
@@ -198,7 +198,7 @@ var CFLASH=/(^BREAKING|will list|new listing|launchpool|will delist|\bhack(ed)?\
 var wseen={},wboot=0;
 CK.onWire=function(items){
   var now=Date.now();
-  if(!wboot){wboot=now;items.forEach(function(x){wseen[key(x)]=1;});return;}
+  if(!wboot||now-PAGE0<25000){wboot=wboot||now;items.forEach(function(x){wseen[key(x)]=1;});return;}
   items.slice(0,15).forEach(function(x){var k=key(x);if(wseen[k])return;wseen[k]=1;if(!flashOn||!CFLASH.test(x.title)||(x.ts&&now-x.ts>10*60000))return;queue.push(x);});
   if(queue.length){if(CK.trNow)CK.trNow(queue);pump();}
 };

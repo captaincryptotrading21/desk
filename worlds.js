@@ -10,14 +10,17 @@
 (function(){
 "use strict";
 var CK=window.CK,u=CK.u,esc=u.esc;
-var W=[
+var W0=[
   {v:"journee",name:"Journée",key:"1",col:"#E9C46A",desc:"Sessions, annonces et dérivés : où en est la journée."},
   {v:"macro",name:"Signaux",key:"2",col:"#7FA8F0",desc:"Dix indicateurs, une direction chacun, avec la preuve."},
   {v:"screener",name:"Screener",key:"3",col:"#FF8A3D",desc:"Les cryptos qui préparent un mouvement."},
   {v:"liq",name:"Liquidations",key:"4",col:"#F07384",desc:"Qui se fait liquider, et où sont les aimants de prix."},
-  {v:"news",name:"News",key:"5",col:"#A99BEA",desc:"Le flux macro en temps réel, en français."},
-  {v:"net",name:"Connexions",key:"6",col:"#5FD3C6",desc:"L'état de chaque source de données, en direct."}
+  {v:"news",name:"News",key:"5",col:"#A99BEA",desc:"Toutes les news en direct : tweets, Trump, macro, crypto, en français."},
+  {v:"veille",name:"Agent",key:"6",col:"#B8F36B",desc:"Une lecture du marché toutes les 30 min : niveaux, scénarios et bilan."},
+  {v:"net",name:"Connexions",key:"7",col:"#5FD3C6",desc:"L'état de chaque source de données, en direct."}
 ];
+/* Espaces décochés dans le Studio : retirés de l'accueil ; les raccourcis clavier suivent l'ordre restant */
+var W=W0.filter(function(w){var e=(CK.cfg&&CK.cfg().espaces)||{};return e[w.v]!==false;});W.forEach(function(w,i){w.key=String(i+1);});
 var ln,tip,sel=0,artLayer=null,reduce=CK.reduce,TIPS=[],ACTS=[],hoverT=null,bar;
 function idxOf(v){for(var i=0;i<W.length;i++)if(W[i].v===v)return i;return -1;}
 function cd(ms){var m=Math.max(0,Math.round(ms/60000));return m<60?m+" min":Math.floor(m/60)+" h "+(m%60<10?"0":"")+m%60;}
@@ -110,6 +113,15 @@ var ART={
         '<text class="lb al" x="'+(44+i*6)+'" y="'+(y+20)+'">'+(x&&x.ts?u.ago(x.ts):"")+'</text><text class="nt" x="'+(44+i*6)+'" y="'+(y+38)+'">'+esc(l1)+'</text><text class="nt" x="'+(44+i*6)+'" y="'+(y+55)+'">'+esc(l2)+'</text></g>';});
     return s;}
 };
+ART.veille=function(d,tips){
+  var st=CK.veille?CK.veille.state():{msgs:[],att:[]},s="",cx=200,cy=134;
+  [96,66,36].forEach(function(r,i){s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" style="fill:none;stroke:var(--wc);stroke-opacity:'+(0.18+i*0.1)+';stroke-width:1.5"/>';});
+  s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+92)+'" y2="'+(cy-28)+'" style="stroke:var(--wc);stroke-width:2;stroke-opacity:.7"/><circle cx="'+cx+'" cy="'+cy+'" r="5" style="fill:var(--wc)"/>';
+  var pts=st.msgs.slice(-6);pts.forEach(function(m,i){var a=-0.4-i*0.95,rr=40+(m.importance||1)*18,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;
+    var tt=tips?T(tipHead(esc(m.actif)+" · "+u.parisTime(m.ts),"",m.importance>=2?"var(--warn)":"var(--wc)")+'<span class="tx">'+esc(m.titre)+'</span><span class="ta">Clic : ouvrir l\'agent</span>',"veille"):"";
+    s+='<g class="hv"'+tt+'>'+(tips?'<circle class="hit" cx="'+x+'" cy="'+y+'" r="16"/>':'')+'<circle cx="'+x+'" cy="'+y+'" r="'+(4+(m.importance||1)*2)+'" style="fill:var(--wc);opacity:'+(m.importance>=2?1:.55)+'"/></g>';});
+  if(!pts.length)s+='<text class="lb sm" x="'+cx+'" y="'+(cy+124)+'">'+(st.active?"Veille active":"Clé IA à ajouter")+'</text>';
+  return s;};
 ART.net=function(d,tips){
   var sm=CK.netSummary?CK.netSummary():{list:[]},C={ok:"var(--up)",warn:"var(--warn)",down:"var(--down)",idle:"var(--faint)"},s="";
   sm.list.forEach(function(x,i){var c=i%5,r=Math.floor(i/5),cx=40+c*80,cy=36+r*60,col=C[x.st.k];
@@ -129,6 +141,7 @@ function stats(i,d){
     case "screener":return [[d.setups!=null?String(d.setups):"—","setups"],[d.preset||"—","stratégie"],[d.rows[0]?d.rows[0].n:"—","en tête"]];
     case "liq":var t=d.L+d.Sh;return [[t?u.usd(t):"—","liquidés en 1 h",d.hotLiq?"down":""],[t?Math.round(d.L/t*100)+" %":"—","de longs"],[d.big?u.usd(d.big.usd):"—",d.big?"plus grosse · "+d.big.base:"plus grosse"]];
     case "news":var f=d.items[0];return [[f&&f.ts?u.ago(f.ts):"—","dernière news"],[String(d.recent),"dans l'heure"],["FinancialJuice","source"]];
+    case "veille":var vs=CK.veille?CK.veille.state():{msgs:[],att:[]},lm=vs.msgs[vs.msgs.length-1];return [[vs.active?(vs.busy?"Réfléchit":"Active"):"Inactive","agent IA",vs.active?"up":""],[String(vs.att.length),"lectures aujourd'hui"],[lm?u.parisTime(lm.ts):"—","dernière lecture"]];
     case "net":var sm=CK.netSummary?CK.netSummary():{ok:0,warn:0,down:0};return [[sm.ok+"/"+(sm.list||[]).length,"sources actives","up"],[String(sm.warn),"à surveiller",sm.warn?"warn":""],[String(sm.down),"en panne",sm.down?"down":""]];
   }return [];
 }
@@ -139,6 +152,7 @@ function insights(i,d){
     case "screener":return d.rows.slice(0,3).map(function(x,k){return [String(k+1),'<b>'+esc(x.n)+'</b> · '+esc(x.px)+' · <span class="'+(x.up?"up":"down")+'">'+esc(x.ch)+'</span>',""];});
     case "liq":var L=[];if(d.mg&&d.mg.low)L.push(["↓","Aimant sous le prix · <b>"+u.nf(d.mg.low.px,0)+"</b> ("+esc(d.mg.sym||"BTC")+")","down"]);if(d.mg&&d.mg.high)L.push(["↑","Aimant au-dessus · <b>"+u.nf(d.mg.high.px,0)+"</b>","up"]);
       d.bigs.slice(0,3-L.length).forEach(function(x){L.push(["●","<b>"+esc(x.base)+"</b> "+(x.long?"long":"short")+" liquidé · "+u.usd(x.usd)+" · "+u.ago(x.ts),x.long?"down":"up"]);});return L;
+    case "veille":var vs2=CK.veille?CK.veille.state():{msgs:[]};if(!vs2.active)return [["◷","Connexion à l'agent…",""]];return vs2.msgs.slice(-3).reverse().map(function(m){return [m.importance>=2?"!":"●","<b>"+esc(m.actif)+"</b> · "+esc(m.titre),m.importance>=2?"warn":""];}).concat(vs2.msgs.length?[]:[["◷","Première lecture du marché en préparation",""]]);
     case "net":var L2=(CK.netSummary?CK.netSummary().list:[]).filter(function(x){return x.st.k==="down"||x.st.k==="warn";}).slice(0,3);
       return L2.length?L2.map(function(x){return [x.st.k==="down"?"✕":"!","<b>"+esc(x.s.name)+"</b> · "+esc(x.st.l),x.st.k==="down"?"down":"warn"];}):[["✓","Toutes les sources répondent","up"]];
     case "news":return d.items.slice(0,3).map(function(x){return ["◆",'<b>'+(x.ts?u.ago(x.ts):"")+'</b> · '+esc((x.title||"").slice(0,80))+((x.title||"").length>80?"…":""),""];});
@@ -160,7 +174,7 @@ function build(){
       '<button type="button" class="ln-go" id="lnGo" data-cur="Ouvrir"><span id="lnGoT">Ouvrir</span><kbd>↵</kbd></button></div>'+
       '<div class="ln-art" id="lnArt"><span class="ln-art-h">Survole pour les détails · clic pour agir</span></div></div>'+
     '<div class="ln-row" id="lnRow" role="listbox" aria-label="Mondes"><i class="ln-glow" aria-hidden="true"></i></div>'+
-    '<div class="ln-hint"><kbd>←</kbd><kbd>→</kbd> naviguer <i></i><kbd>↵</kbd> ouvrir <i></i><kbd>1</kbd>–<kbd>5</kbd> accès direct <i></i><kbd>Échap</kbd> accueil</div>'+
+    '<div class="ln-hint"><kbd>←</kbd><kbd>→</kbd> naviguer <i></i><kbd>↵</kbd> ouvrir <i></i><kbd>1</kbd>–<kbd>'+W.length+'</kbd> accès direct <i></i><kbd>Échap</kbd> accueil</div>'+
     '<div class="ln-tip" id="lnTip" role="tooltip"></div>';
   grid.parentNode.insertBefore(ln,grid);
   var row=u.$("lnRow");glow=row.querySelector(".ln-glow");tip=u.$("lnTip");heroBox=u.$("lnHero");
