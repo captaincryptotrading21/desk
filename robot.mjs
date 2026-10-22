@@ -138,6 +138,8 @@ await writeFile(OUT + "/data/news.json", JSON.stringify(news));
 await writeFile(OUT + "/data/fj.json", JSON.stringify(fj));
 await writeFile(OUT + "/data/meta.json", JSON.stringify(meta));
 await copyFile("index.html", OUT + "/index.html");
+/* Image d'aperçu quand on partage le lien (X, Discord, Telegram…) */
+try { await copyFile("apercu.png", OUT + "/apercu.png"); } catch {}
 try { await writeFile(OUT + "/.nojekyll", ""); } catch {}
 console.log("Agenda", cal.length, "· news crypto", news.length, "· FinancialJuice", fj.length);
 console.log(JSON.stringify(meta.sources, null, 1));
