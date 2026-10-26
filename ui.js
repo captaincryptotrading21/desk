@@ -12,7 +12,7 @@ function seg(id,cur,opts){return '<div class="st-seg" id="'+id+'" role="group">'
 /* Studio : l'essentiel visible, le reste replié. Tout s'applique tout de suite. */
 function renderStudio(){
   var C=CK.cfg(),sp=CK.layout&&CK.layout.spaces?CK.layout.spaces():[];
-  var h='<button type="button" class="st-own" id="sOwn"><b>Fais-en le tien</b><span>Change tout ce que tu veux avec une IA, sans coder →</span></button>'+'<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
+  var h='<button type="button" class="st-own" id="sOwn"><b>Copier le Desk</b><span>Récupère-le et change tout ce que tu veux avec une IA, sans coder →</span></button>'+'<div class="st-sec"><h4>Mon desk</h4><div class="st-grid">'+
     fld("Nom",'<input id="sName" maxlength="24" value="'+esc(C.name)+'">')+fld("Sous-titre",'<input id="sTag" maxlength="40" value="'+esc(C.tagline)+'">')+
     fld("Cryptos suivies dans la barre du haut",'<input id="sWatch" value="'+esc((C.watchlist||[]).join(", "))+'" placeholder="BTC, ETH, SOL">',true)+'</div></div>'+
     '<div class="st-sec"><h4>Espaces affichés</h4><p class="st-hint">Décoche un espace qui ne t\'intéresse pas : il disparaît de l\'accueil et de la navigation (la page se recharge).</p><div class="st-chips">'+
@@ -138,7 +138,7 @@ function wireCalc(){$("btnCalc").addEventListener("click",function(){var b=S.tic
 var palSel=0,palItems=[];
 function cmds(){return [
   {t:"Affichage sombre",k:"thème",run:function(){CK.setTheme("dark");}},{t:"Affichage clair",k:"thème",run:function(){CK.setTheme("light");}},
-  {t:"Fais-en le tien",k:"personnaliser avec une IA",run:function(){CK.openOv("ovOwn");}},
+  {t:"Copier le Desk",k:"personnaliser avec une IA",run:function(){CK.openOv("ovOwn");}},
   {t:"Ouvrir le Studio",k:"personnaliser",run:function(){$("btnStudio").click();}},{t:"Déplacer les blocs",k:"disposition",run:function(){CK.layout.edit(true);}},
   
   {t:"Alertes",k:"prix",run:function(){$("btnAlerts").click();}},{t:"Calculateur de position",k:"risque",run:function(){$("btnCalc").click();}},

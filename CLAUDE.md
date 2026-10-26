@@ -36,8 +36,10 @@ Un petit robot GitHub (`robot.mjs`) publie toutes les 10 minutes ce que le navig
 | `screener.js` | Screener (préréglages dans `PRESETS`, colonnes dans `COLS`). |
 | `ui.js` | Studio, alertes de prix, calculateur de position, palette de commandes (Ctrl+K). |
 | `net.js` | Espace « Connexions » : état en direct de chaque source (liste `SRC`). |
-| `veille.js` | **Les agents** (espace « Agent ») : réglages par défaut en haut du fichier (`REGLAGES`), mesures du marché, détection Scalp, Analyste, appel à l'IA choisie (`IA` : Gemini, OpenRouter, ChatGPT, Claude, Grok, Perplexity, DeepSeek, Mistral), contrôle des prix cités, consommation de l'IA et affichage. |
-| `agent-manuel.md` | **Le cerveau des agents** : la méthode de trader, en français, et les deux contrats JSON (ALERTE SCALP, ANALYSTE). Il est envoyé à l'IA à chaque appel. |
+| `veille.js` | **L'espace « Agent »** : affichage de la lecture du marché écrite par l'agent (`lectureHTML`, `actifCol`, `jauge`, `etat`), mise à jour en direct (`majLive`), lectures précédentes (`histo`), onglets Bilan (`viewBilan`) et Conso IA (`viewConso`), cartes BTC/ETH/SOL/dollar avec graphiques et niveaux (`card`, `cardUSD`, `niveaux`), indicateur TradingView (`PINE_AUTO`). |
+| `desk-news-worker.js` | **Le relais Cloudflare** (code de l'agent et des news Telegram). Il ne tourne pas dans le navigateur : il se déploie sur Cloudflare Workers (voir plus bas). Aucune clé dedans : elles sont des secrets Cloudflare. |
+| `niveaux-captain.pine` | L'indicateur TradingView « Niveaux Captain » (Pine v5), copié par le bouton « Indicateur TradingView » du Desk. |
+| `agent-manuel.md` | Ancien manuel de l'agent, **plus utilisé** (l'agent actuel a sa méthode dans le relais). Ne pas le modifier. |
 | `sound.js` | Ambiances sonores et sons d'interface. |
 | `bg.js` | Fond animé. |
 
@@ -45,20 +47,33 @@ Tout le code partage l'objet global `window.CK`. Chaque fichier est une fonction
 
 ## L'agent IA (espace « Agent », touche 6)
 
-L'agent tourne sur un relais Cloudflare commun à tous les utilisateurs (code : `relais/desk-news-worker.js` dans le dépôt de Captain Trading, pas dans ce dossier). Toutes les minutes, il lit le marché (OKX, TradingView, news Telegram et Tree of Alpha, agenda), détecte ce qui compte avec des règles de trader (purges, gros moves, levier, cassures et pièges de niveaux, volume anormal, bougie anormale du dollar, volume EUR/USD, news qui font bouger le prix, annonces), écrit dans son fil, suit ses propres messages (↳) et appelle une IA seulement pour un événement important, le brief de Londres et de New York, et un point par heure.
+L'agent tourne sur un relais Cloudflare commun à tous les utilisateurs (`desk-news-worker.js`). Toutes les minutes, il mesure le marché (OKX, TradingView, news Telegram et Tree of Alpha, agenda) et calcule des faits (liquidations, levier, tendance, niveaux). Toutes les 30 min, juste après l'ouverture de l'Europe et de Wall Street, et tout de suite sur un événement fort (purge, gros mouvement, news majeure), une IA gratuite (Gemini, puis Groq en secours) écrit une **lecture du marché** : ce qui se passe, pourquoi, et pour chaque actif un scénario haussier et un baissier (déclencheur à au moins 0,2 % du prix, objectif à au moins 0,4 % au-delà). Le relais vérifie chaque prix cité et remplace un scénario absurde par celui du Desk.
+
+Il suit ensuite chaque scénario comme un trade : déclenché sur une clôture 15 min au-delà du niveau, réussi si l'objectif est touché avant le stop (le niveau d'en face), noté dans le Bilan 4 h après.
 
 Le Desk (`veille.js`) affiche :
-1. des cartes vivantes BTC, ETH, SOL et dollar, calculées en direct dans le navigateur ;
-2. le fil de l'agent, façon chat de desk, avec les réponses de l'IA et les suivis ;
-3. les 👍 / 👎 de chaque utilisateur (gardés dans son navigateur), qui règlent ce qui lui remonte et le notifie ;
-4. l'onglet « Conso IA » : appels, tokens et état de chaque IA (Gemini, OpenRouter, Workers AI).
+1. la lecture en cours : titre, une ligne par actif avec le prix en direct, une jauge (le prix entre support et résistance), une phrase d'état, puis « Pourquoi », « À surveiller », « Tout change si » ;
+2. les lectures précédentes, repliées ;
+3. des cartes BTC, ETH, SOL et dollar avec graphiques et niveaux ;
+4. les onglets « Bilan » (réussites et stops) et « Conso IA ».
 
 Personne n'a de clé à mettre : les clés sont des secrets du relais, jamais dans le code, le Desk ou GitHub.
 
 **Recettes**
-- *Changer l'affichage* : `veille.js` (cartes : `card()` et `cardUSD()` ; fil : `line()` ; types de messages : `TYPES`) et le bloc « Agent IA » de `worlds.css`.
-- *Changer quand l'agent te notifie* : réglage « Me notifier » dans l'agent, ou `REGLAGES.notifier`.
-- *Avoir ton propre agent* (autres règles, autres actifs) : déploie ta copie du relais sur ton compte Cloudflare et mets son adresse dans `TG_URL` (`core.js`).
+- *Changer l'affichage de la lecture* : `lectureHTML`, `actifCol` et `jauge` dans `veille.js`, et les styles `.g13…` en fin de `worlds.css`.
+- *Changer la fréquence des appels au relais* : `tgDelai()` dans `core.js` (version publique : toutes les 3 min si l'Agent ou les News sont à l'écran).
+- *Avoir ton propre agent* (autres règles, autres actifs) : crée un Worker sur Cloudflare (offre gratuite), colle `desk-news-worker.js`, ajoute un espace KV nommé `DESK`, la liaison Workers AI nommée `AI`, le secret `GEMINI_KEY` (clé gratuite sur aistudio.google.com) et `GROQ_KEY` en option (console.groq.com), puis un déclencheur Cron `* * * * *`. Mets ensuite l'adresse de ton Worker dans `TG_URL` (`core.js`).
+
+## Les news (espace « News »)
+
+- Onglet **Tout** : toutes les sources réunies, une couleur par catégorie (`NCAT` et `newsRich` dans `core.js`, styles `.nr…` dans `worlds.css`).
+- Onglet **X** : les tweets des gros comptes via Tree of Alpha (`wireParse` : listes `WACC`, `WVIP`, `WTRUMP`, `WONCH`, `WMAC` dans `core.js`) et les comptes « insiders » relayés par Telegram (liste `CHAINES` dans `desk-news-worker.js`, groupes dans `TGC` de `core.js`). Trump est aussi suivi sur Truth Social.
+- Onglets Macro (FinancialJuice), Crypto et Articles.
+- *Ajouter une chaîne Telegram publique* : l'ajouter dans `CHAINES` du relais (nom de la chaîne `t.me/s/NOM`), puis lui donner un groupe dans `TGC` (`core.js`).
+
+## Studio et espaces
+
+Le bouton « Studio » permet de choisir les espaces affichés sur l'accueil (`espaces` dans `DEF` de `core.js`, liste `W0` de `worlds.js`, `VIEWS0` de `layout.js`). Un espace décoché disparaît de l'accueil, du menu et de la page.
 
 ## Recettes courantes
 

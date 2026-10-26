@@ -1,0 +1,137 @@
+//@version=5
+// ============================================================================
+// Niveaux Captain · Desk Captain Trading
+// Les mêmes niveaux que le Desk, calculés directement par TradingView :
+// semaine passée, jour (haut et bas d'hier, ouverture), POC (prix au plus gros
+// volume, jour et veille), sessions Asie / Londres / New York, sommets et creux 4 h et 1 h.
+// À ajouter UNE SEULE FOIS : ensuite il se met à jour tout seul, sur tous les graphiques.
+// Fonctionne sur les unités de temps intraday (1 min à 4 h). Heures des sessions en UTC, comme le Desk.
+// Lecture de marché, pas un conseil d'achat ou de vente.
+// ============================================================================
+indicator("Niveaux Captain", overlay = true, max_lines_count = 80, max_labels_count = 80)
+
+grpN = "Niveaux affichés"
+showW   = input.bool(true,  "Semaine : haut et bas de la semaine passée", group = grpN)
+showD   = input.bool(true,  "Jour : haut et bas d'hier, ouverture du jour", group = grpN)
+showPOC = input.bool(true,  "POC : prix au plus gros volume (jour et veille)", group = grpN)
+showS   = input.bool(true,  "Sessions : Asie, Londres, New York", group = grpN)
+show4h  = input.bool(true,  "Sommets et creux 4 h", group = grpN)
+show1h  = input.bool(false, "Sommets et creux 1 h", group = grpN)
+grpR = "Réglages"
+pocPct  = input.float(0.05, "Finesse du POC (% du prix)", minval = 0.01, step = 0.01, group = grpR)
+decal   = input.int(12, "Position des étiquettes (barres à droite)", minval = 1, maxval = 300, group = grpR)
+plein   = input.bool(true, "Lignes sur toute la largeur du graphique", group = grpR)
+
+// Couleurs du Desk
+cW = color.rgb(195, 166, 255)
+cD = color.rgb(255, 194, 102)
+cP = color.rgb(95, 211, 230)
+cS = color.rgb(127, 168, 240)
+c4 = color.rgb(255, 159, 90)
+c1 = color.rgb(174, 179, 188)
+
+// ---------- Semaine et jour (bougies terminées, aucune valeur qui change après coup) ----------
+[dH, dL, dO] = request.security(syminfo.tickerid, "D", [high[1], low[1], open], lookahead = barmerge.lookahead_on)
+[wH, wL] = request.security(syminfo.tickerid, "W", [high[1], low[1]], lookahead = barmerge.lookahead_on)
+
+// ---------- Sommets et creux (2 bougies de chaque côté, comme le Desk) ----------
+pivots() =>
+    ph = ta.pivothigh(high, 2, 2)
+    pl = ta.pivotlow(low, 2, 2)
+    [ta.valuewhen(not na(ph), ph, 0), ta.valuewhen(not na(ph), ph, 1), ta.valuewhen(not na(pl), pl, 0), ta.valuewhen(not na(pl), pl, 1)]
+[h4a, h4b, l4a, l4b] = request.security(syminfo.tickerid, "240", pivots())
+[h1a, h1b, l1a, l1b] = request.security(syminfo.tickerid, "60", pivots())
+
+// ---------- Sessions du jour (UTC) ----------
+nouveauJour = ta.change(time("D")) != 0
+dans(s) => not na(time(timeframe.period, s + ":1234567", "UTC"))
+var float asH = na
+var float asL = na
+var float loH = na
+var float loL = na
+var float nyH = na
+var float nyL = na
+if nouveauJour
+    asH := na
+    asL := na
+    loH := na
+    loL := na
+    nyH := na
+    nyL := na
+if timeframe.isintraday
+    if dans("0000-0700")
+        asH := na(asH) ? high : math.max(asH, high)
+        asL := na(asL) ? low : math.min(asL, low)
+    if dans("0700-1330")
+        loH := na(loH) ? high : math.max(loH, high)
+        loL := na(loL) ? low : math.min(loL, low)
+    if dans("1330-2000")
+        nyH := na(nyH) ? high : math.max(nyH, high)
+        nyL := na(nyL) ? low : math.min(nyL, low)
+
+// ---------- POC : profil de volume du jour, mis à jour à chaque bougie ----------
+var map<int, float> profil = map.new<int, float>()
+var float pas = na
+var int pocK = na
+var float pocV = 0.0
+var float pocJour = na
+var float pocHier = na
+if nouveauJour or na(pas)
+    if nouveauJour and not na(pocJour)
+        pocHier := pocJour
+    profil.clear()
+    pas := open * pocPct / 100
+    pocK := na
+    pocV := 0.0
+    pocJour := na
+if timeframe.isintraday and not na(pas) and volume > 0
+    k = int(math.floor(hlc3 / pas))
+    v = nz(profil.get(k)) + volume
+    profil.put(k, v)
+    if v > pocV
+        pocV := v
+        pocK := k
+    pocJour := (pocK + 0.5) * pas
+
+// ---------- Dessin (refait à la dernière bougie) ----------
+var array<line> lignes = array.new<line>()
+var array<label> etiquettes = array.new<label>()
+trace(float p, string nom, color c, bool pointille) =>
+    if not na(p)
+        lignes.push(line.new(bar_index - 1, p, bar_index, p, extend = plein ? extend.both : extend.right, color = color.new(c, 15), width = 1, style = pointille ? line.style_dashed : line.style_solid))
+        etiquettes.push(label.new(bar_index + decal, p, nom + "  " + str.tostring(p, format.mintick), style = label.style_label_left, color = color.new(c, 82), textcolor = c, size = size.small))
+
+if barstate.islast
+    for l in lignes
+        line.delete(l)
+    for e in etiquettes
+        label.delete(e)
+    lignes.clear()
+    etiquettes.clear()
+    if showW
+        trace(wH, "Haut sem. passée", cW, false)
+        trace(wL, "Bas sem. passée", cW, false)
+    if showD
+        trace(dH, "Haut d'hier", cD, false)
+        trace(dL, "Bas d'hier", cD, false)
+        trace(dO, "Ouv. du jour", cD, true)
+    if showPOC and timeframe.isintraday
+        trace(pocJour, "POC du jour", cP, false)
+        trace(pocHier, "POC d'hier", cP, true)
+    if showS and timeframe.isintraday
+        trace(asH, "Haut Asie", cS, true)
+        trace(asL, "Bas Asie", cS, true)
+        trace(loH, "Haut Londres", cS, true)
+        trace(loL, "Bas Londres", cS, true)
+        trace(nyH, "Haut New York", cS, true)
+        trace(nyL, "Bas New York", cS, true)
+    if show4h
+        trace(h4a, "Sommet 4h", c4, false)
+        trace(h4b, "Sommet 4h", c4, false)
+        trace(l4a, "Creux 4h", c4, false)
+        trace(l4b, "Creux 4h", c4, false)
+    if show1h
+        trace(h1a, "Sommet 1h", c1, true)
+        trace(h1b, "Sommet 1h", c1, true)
+        trace(l1a, "Creux 1h", c1, true)
+        trace(l1b, "Creux 1h", c1, true)
